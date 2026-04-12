@@ -1,573 +1,835 @@
-import Link from "next/link";
+"use client";
+
+import { useMemo, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   BatteryCharging,
   CarFront,
   CheckCircle2,
-  ChevronRight,
-  CircleHelp,
+  Home,
+  MapPin,
   ShieldCheck,
   Sparkles,
   Star,
+  User,
   Zap,
 } from "lucide-react";
 import { PublicLaunchNote } from "@/components/public-launch-note";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 
-const services = [
+const MIN_SUBMIT_TIME_MS = 1500;
+
+const projectTypes = [
   {
     title: "EV Charger Installation",
-    description:
-      "Safe, design-conscious home charging setup for modern homeowners.",
+    description: "Home charging setup for modern EV ownership.",
     icon: CarFront,
   },
   {
-    title: "Panel Upgrades",
-    description:
-      "Prepare your home for new electrical demand with cleaner planning.",
+    title: "Panel Upgrade",
+    description: "Electrical readiness for higher home energy demand.",
     icon: Zap,
   },
   {
-    title: "Heat Pump Solutions",
-    description:
-      "Efficient comfort upgrades for homes moving toward all-electric living.",
+    title: "Heat Pump Solution",
+    description: "Efficient comfort upgrades for future-ready homes.",
     icon: Sparkles,
   },
   {
-    title: "Battery & Backup Power",
-    description:
-      "Resilient home energy support for outages, storage, and future readiness.",
+    title: "Battery / Backup Power",
+    description: "Resilience-minded storage and backup planning.",
     icon: BatteryCharging,
   },
+] as const;
+
+const propertyTypes = [
+  "Single-family home",
+  "Townhouse",
+  "Condo",
+  "Multi-family property",
+  "Other",
 ];
 
-const trustPoints = [
-  "Vetted pros",
-  "Guided quotes",
-  "Premium support",
-  "Electrification-focused",
+const projectGoalOptions = [
+  "I want to start as soon as possible",
+  "I am comparing options",
+  "I am planning for the next few months",
+  "I need guidance before deciding",
 ];
 
-const steps = [
+const reassuranceCards = [
   {
-    number: "01",
-    title: "Tell us about your home",
+    title: "A guided first step",
     description:
-      "Start with a guided intake designed for homeowners, not contractor chaos.",
+      "FuseHarbor is designed to make homeowner intake feel cleaner and less overwhelming than generic contractor forms.",
   },
   {
-    number: "02",
-    title: "Get matched thoughtfully",
+    title: "Trust-first project review",
     description:
-      "We connect you with vetted professionals aligned with your home and project type.",
+      "Your details are organized into a clearer internal workflow so the project can be reviewed more thoughtfully.",
   },
   {
-    number: "03",
-    title: "Review clear options",
+    title: "Premium homeowner experience",
     description:
-      "Compare next steps with more clarity around scope, fit, and timing.",
-  },
-  {
-    number: "04",
-    title: "Move forward confidently",
-    description:
-      "Book your upgrade through a cleaner, more premium electrification flow.",
-  },
-];
-
-const benefits = [
-  "Electrification-focused, not generic",
-  "Premium homeowner experience",
-  "Cleaner project discovery",
-  "Built for modern upgrades",
-];
-
-const trustLayer = [
-  {
-    title: "A more guided homeowner experience",
-    description:
-      "FuseHarbor is built to reduce confusion and give homeowners a calmer starting point for high-value electrical upgrades.",
-  },
-  {
-    title: "Trust-first project intake",
-    description:
-      "We structure the request process so homeowners can share clean, usable details before the project moves forward.",
-  },
-  {
-    title: "Premium support mindset",
-    description:
-      "The platform is designed to feel thoughtful, warm, and design-aware instead of rushed or generic.",
-  },
-  {
-    title: "Built around modern home upgrades",
-    description:
-      "Everything starts with the real categories homeowners are prioritizing now: EV charging, panel capacity, heat pumps, and backup power.",
+      "The goal is to help serious homeowners feel supported, informed, and confident before moving forward.",
   },
 ];
 
-const faqItems = [
-  {
-    question: "Do I need to know exactly what service I need before starting?",
-    answer:
-      "No. FuseHarbor is designed to help homeowners begin even if they are still comparing options or need guidance before deciding.",
-  },
-  {
-    question: "Can I request a quote even if I am early in planning?",
-    answer:
-      "Yes. You can start whether you want to move quickly or you are planning for the next few months.",
-  },
-  {
-    question: "Is FuseHarbor only for one type of upgrade?",
-    answer:
-      "No. The platform is being built for EV charger installation, panel upgrades, heat pumps, battery storage, and related electrification projects.",
-  },
-  {
-    question: "What makes FuseHarbor different?",
-    answer:
-      "It is designed to feel more premium, structured, and homeowner-centered than a typical contractor lead marketplace.",
-  },
-];
+const inputBaseClassName =
+  "w-full rounded-[20px] border border-fh-linen bg-fh-warm-white px-4 py-4 text-sm text-fh-graphite outline-none transition placeholder:text-fh-stone/80 focus:border-fh-copper focus:bg-fh-white";
 
-const proofStats = [
-  {
-    label: "Launch focus",
-    value: "Maryland",
-  },
-  {
-    label: "Core promise",
-    value: "Guided trust",
-  },
-  {
-    label: "Project type",
-    value: "Electrification",
-  },
-];
+type FormState = {
+  fullName: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  zipCode: string;
+  propertyType: string;
+  notes: string;
+};
 
-const premiumSignals = [
-  {
-    title: "Designed for serious homeowners",
-    description:
-      "FuseHarbor is for people making meaningful home upgrades, not chasing random low-quality leads.",
-  },
-  {
-    title: "Built for premium pro fit",
-    description:
-      "The platform is being shaped to attract professionals who value cleaner projects and stronger presentation.",
-  },
-  {
-    title: "Structured before scale",
-    description:
-      "The goal is to build a stable, polished marketplace foundation before broader rollout and outreach.",
-  },
-];
+const initialFormState: FormState = {
+  fullName: "",
+  email: "",
+  phone: "",
+  address: "",
+  city: "",
+  zipCode: "",
+  propertyType: propertyTypes[0],
+  notes: "",
+};
 
-export default function Home() {
+function formatPhoneNumber(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 10);
+
+  if (digits.length <= 3) {
+    return digits;
+  }
+
+  if (digits.length <= 6) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  }
+
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
+type QuoteRequestApiResponse =
+  | {
+      id: string;
+      createdAt: string;
+    }
+  | {
+      error: string;
+    };
+
+export default function GetAQuotePage() {
+  const router = useRouter();
+
+  const [selectedProjectType, setSelectedProjectType] = useState<string>(
+    projectTypes[0].title,
+  );
+  const [selectedGoal, setSelectedGoal] = useState<string>(
+    projectGoalOptions[0],
+  );
+  const [form, setForm] = useState<FormState>(initialFormState);
+  const [showValidation, setShowValidation] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string>("");
+  const [zipValidationMessage, setZipValidationMessage] = useState("");
+  const [honeypotValue, setHoneypotValue] = useState("");
+  const [formStartedAt, setFormStartedAt] = useState(() => Date.now());
+
+  const selectedProject = useMemo(
+    () => projectTypes.find((item) => item.title === selectedProjectType),
+    [selectedProjectType],
+  );
+
+  function updateField(field: keyof FormState, value: string) {
+    setForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+
+    if (field === "zipCode") {
+      setZipValidationMessage("");
+      setSubmitError("");
+    }
+  }
+
+  const trimmedForm = {
+    fullName: form.fullName.trim(),
+    email: form.email.trim(),
+    phone: form.phone.replace(/\D/g, "").slice(0, 10),
+    address: form.address.trim(),
+    city: form.city.trim(),
+    zipCode: form.zipCode.trim(),
+    propertyType: form.propertyType.trim(),
+    notes: form.notes.trim(),
+  };
+
+  const emailLooksValid =
+    trimmedForm.email.length > 0 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedForm.email);
+
+  const phoneLooksValid = /^\d{10}$/.test(trimmedForm.phone);
+
+  const zipLooksValid =
+    trimmedForm.zipCode.length > 0 && /^\d{5}$/.test(trimmedForm.zipCode);
+
+  const requiredFieldErrors = {
+    fullName: trimmedForm.fullName.length === 0,
+    email: trimmedForm.email.length === 0 || !emailLooksValid,
+    phone: trimmedForm.phone.length === 0 || !phoneLooksValid,
+    address: trimmedForm.address.length === 0,
+    city: trimmedForm.city.length === 0,
+    zipCode: trimmedForm.zipCode.length === 0 || !zipLooksValid,
+  };
+
+  const isFormValid =
+    !requiredFieldErrors.fullName &&
+    !requiredFieldErrors.email &&
+    !requiredFieldErrors.phone &&
+    !requiredFieldErrors.address &&
+    !requiredFieldErrors.city &&
+    !requiredFieldErrors.zipCode;
+
+  const summaryItems = [
+    {
+      label: "Project type",
+      value: selectedProjectType,
+    },
+    {
+      label: "Homeowner",
+      value: trimmedForm.fullName || "Not provided yet",
+    },
+    {
+      label: "Email",
+      value: trimmedForm.email || "Not provided yet",
+    },
+    {
+      label: "Phone",
+      value: trimmedForm.phone
+        ? formatPhoneNumber(trimmedForm.phone)
+        : "Not provided yet",
+    },
+    {
+      label: "Location",
+      value:
+        trimmedForm.city || trimmedForm.zipCode
+          ? `${trimmedForm.city || "City pending"}${
+              trimmedForm.city && trimmedForm.zipCode ? ", " : ""
+            }${trimmedForm.zipCode || "ZIP pending"}`
+          : "Not provided yet",
+    },
+    {
+      label: "Property type",
+      value: trimmedForm.propertyType || "Not selected yet",
+    },
+    {
+      label: "Project goal",
+      value: selectedGoal,
+    },
+  ];
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    setShowValidation(true);
+    setSubmitError("");
+    setZipValidationMessage("");
+
+    if (!isFormValid) {
+      return;
+    }
+
+    if (honeypotValue.trim().length > 0) {
+      setSubmitError("Please review your details and try again.");
+      return;
+    }
+
+    if (Date.now() - formStartedAt < MIN_SUBMIT_TIME_MS) {
+      setSubmitError(
+        "Please take a moment to review your details, then submit again.",
+      );
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      const response = await fetch("/api/quote-requests", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+        body: JSON.stringify({
+          projectType: selectedProjectType,
+          projectGoal: selectedGoal,
+          fullName: trimmedForm.fullName,
+          email: trimmedForm.email,
+          phone: trimmedForm.phone,
+          address: trimmedForm.address,
+          city: trimmedForm.city,
+          zipCode: trimmedForm.zipCode,
+          propertyType: trimmedForm.propertyType,
+          notes: trimmedForm.notes,
+          honeypot: honeypotValue,
+          startedAt: formStartedAt,
+        }),
+      });
+
+      const result = (await response.json()) as QuoteRequestApiResponse;
+
+      if (!response.ok || "error" in result) {
+        const message =
+          "error" in result
+            ? result.error
+            : "Something went wrong while saving your quote request.";
+
+        if (message.toLowerCase().includes("zip code")) {
+          setZipValidationMessage(message);
+        } else {
+          setSubmitError(message);
+        }
+
+        return;
+      }
+
+      const params = new URLSearchParams({
+        id: result.id,
+        submittedAt: result.createdAt,
+        projectType: selectedProjectType,
+      });
+
+      router.push(`/get-a-quote/success?${params.toString()}`);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while saving your quote request.";
+
+      setSubmitError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  function fieldClassName(hasError: boolean) {
+    return `${inputBaseClassName} ${
+      showValidation && hasError ? "border-red-500 bg-white" : ""
+    }`;
+  }
+
   return (
     <main className="min-h-screen bg-fh-warm-white text-fh-graphite">
-      <section className="relative overflow-hidden border-b border-fh-linen/80">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,_rgba(201,122,43,0.16),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(122,139,90,0.14),_transparent_24%),linear-gradient(to_bottom,_#fffdf9,_#f7f4ee)]" />
-        <div className="absolute left-[-6rem] top-28 -z-10 h-56 w-56 rounded-full bg-fh-sand/25 blur-3xl" />
-        <div className="absolute bottom-0 right-[-5rem] -z-10 h-64 w-64 rounded-full bg-fh-moss/10 blur-3xl" />
+      <section className="relative overflow-hidden border-b border-fh-linen/80 bg-[linear-gradient(to_bottom,_#fffdf9,_#f7f4ee)]">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,_rgba(201,122,43,0.15),_transparent_26%),radial-gradient(circle_at_top_right,_rgba(122,139,90,0.12),_transparent_24%)]" />
 
         <SiteHeader />
 
-        <div className="mx-auto grid max-w-7xl gap-16 px-6 py-14 lg:grid-cols-[1.02fr_0.98fr] lg:px-8 lg:py-20">
-          <div className="max-w-2xl pt-4 lg:pt-12">
-            <div className="inline-flex items-center gap-2 rounded-full border border-fh-linen bg-fh-white px-4 py-2 text-sm text-fh-stone shadow-sm">
-              <ShieldCheck size={16} className="text-fh-copper" />
-              Trusted home electrification, done right.
-            </div>
+        <div className="mx-auto max-w-7xl px-6 pb-10 pt-6 lg:px-8 lg:pb-12">
+          <p className="text-sm font-semibold tracking-[0.2em] text-fh-copper uppercase">
+            Get a quote
+          </p>
 
-            <h1 className="mt-8 font-[family-name:var(--font-manrope)] text-5xl font-semibold tracking-[-0.04em] text-fh-graphite sm:text-6xl lg:text-7xl">
-              Premium home electrification,
-              <span className="mt-1 block text-fh-copper">
-                guided with trust.
-              </span>
-            </h1>
+          <div className="mt-4 grid gap-8 xl:grid-cols-[1.02fr_0.98fr]">
+            <div>
+              <h1 className="max-w-4xl font-[family-name:var(--font-manrope)] text-5xl font-semibold tracking-[-0.04em] sm:text-6xl">
+                Start your electrification project with more clarity and trust
+              </h1>
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-fh-stone">
+                FuseHarbor is designed to make the first homeowner step feel
+                cleaner, calmer, and more premium than a generic contractor
+                request form.
+              </p>
 
-            <p className="mt-6 max-w-xl text-lg leading-8 text-fh-stone lg:text-xl">
-              FuseHarbor helps homeowners move into the future with vetted pros
-              for EV chargers, panel upgrades, heat pumps, and clean energy
-              improvements through a more thoughtful, premium project journey.
-            </p>
-
-            <div className="mt-9 flex flex-col gap-4 sm:flex-row">
-              <Link
-                href="/get-a-quote"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-fh-graphite px-6 py-4 text-sm font-semibold text-fh-white transition hover:opacity-95"
-              >
-                Get a Quote
-                <ArrowRight size={18} />
-              </Link>
-
-              <Link
-                href="/for-pros"
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-fh-linen bg-fh-white px-6 py-4 text-sm font-semibold text-fh-graphite transition hover:border-fh-copper hover:text-fh-copper"
-              >
-                Become a Pro
-                <ChevronRight size={18} />
-              </Link>
-            </div>
-
-            <div className="mt-10 grid gap-3 sm:grid-cols-2">
-              {trustPoints.map((item) => (
-                <span
-                  key={item}
-                  className="rounded-full border border-fh-linen bg-fh-white px-4 py-3 text-sm text-fh-stone shadow-sm"
-                >
-                  {item}
-                </span>
-              ))}
-            </div>
-
-            <div className="mt-10 grid gap-4 sm:grid-cols-3">
-              {proofStats.map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-[24px] border border-fh-linen bg-fh-white px-5 py-4 shadow-sm"
-                >
-                  <p className="text-xs font-semibold tracking-[0.18em] text-fh-copper uppercase">
-                    {item.label}
-                  </p>
-                  <p className="mt-2 font-[family-name:var(--font-manrope)] text-lg font-semibold text-fh-graphite">
-                    {item.value}
-                  </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <div className="inline-flex items-center gap-2 rounded-full border border-fh-linen bg-fh-white px-4 py-2 text-sm font-semibold text-fh-graphite shadow-sm">
+                  <ShieldCheck size={16} className="text-fh-copper" />
+                  Structured intake
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="relative">
-            <div className="rounded-[40px] border border-fh-linen bg-fh-white p-5 shadow-[0_24px_90px_rgba(35,38,43,0.08)]">
-              <div className="rounded-[34px] border border-fh-sand bg-[linear-gradient(135deg,_#fffdf9_0%,_#f2ebe1_100%)] p-6 lg:p-7">
-                <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="max-w-sm">
-                    <p className="text-sm text-fh-stone">Launch focus</p>
-                    <h2 className="mt-2 font-[family-name:var(--font-manrope)] text-2xl font-semibold text-fh-graphite lg:text-3xl">
-                      Premium electrification services
-                    </h2>
-                  </div>
-
-                  <div className="w-fit rounded-full border border-fh-linen bg-fh-white px-4 py-2 text-xs font-semibold tracking-[0.18em] text-fh-moss uppercase">
-                    Maryland First
-                  </div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-fh-linen bg-fh-white px-4 py-2 text-sm font-semibold text-fh-graphite shadow-sm">
+                  <CheckCircle2 size={16} className="text-fh-copper" />
+                  Premium homeowner flow
                 </div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-fh-linen bg-fh-white px-4 py-2 text-sm font-semibold text-fh-graphite shadow-sm">
+                  <Zap size={16} className="text-fh-copper" />
+                  Electrification-focused
+                </div>
+              </div>
+            </div>
 
-                <div className="mt-7 grid gap-4">
-                  {services.map((service) => {
-                    const Icon = service.icon;
+            <div className="rounded-[36px] border border-fh-sand bg-[linear-gradient(135deg,_#f2ebe1_0%,_#e7d9c8_100%)] p-8 shadow-sm lg:p-10">
+              <p className="text-sm font-semibold tracking-[0.2em] text-fh-copper uppercase">
+                What to expect
+              </p>
+              <h2 className="mt-3 font-[family-name:var(--font-manrope)] text-3xl font-semibold text-fh-graphite">
+                A better first step for serious home upgrades
+              </h2>
+              <p className="mt-4 text-base leading-7 text-fh-stone">
+                FuseHarbor is being built to make homeowner intake feel more
+                thoughtful from the beginning, especially for EV charging,
+                panels, heat pumps, and backup power projects.
+              </p>
 
-                    return (
-                      <div
-                        key={service.title}
-                        className="rounded-[28px] border border-fh-linen bg-fh-white p-5 shadow-sm"
-                      >
-                        <div className="flex items-start gap-4">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-fh-sand text-fh-copper">
-                            <Icon size={22} />
-                          </div>
-
-                          <div>
-                            <h3 className="font-[family-name:var(--font-manrope)] text-lg font-semibold text-fh-graphite">
-                              {service.title}
-                            </h3>
-                            <p className="mt-1 text-sm leading-6 text-fh-stone">
-                              {service.description}
-                            </p>
-                          </div>
-                        </div>
+              <div className="mt-8 grid gap-4">
+                {reassuranceCards.map((card) => (
+                  <div
+                    key={card.title}
+                    className="rounded-[24px] border border-fh-linen bg-white/70 px-5 py-4"
+                  >
+                    <div className="flex items-start gap-3">
+                      <Star
+                        size={18}
+                        className="mt-0.5 shrink-0 text-fh-copper"
+                      />
+                      <div>
+                        <p className="text-sm font-semibold text-fh-graphite">
+                          {card.title}
+                        </p>
+                        <p className="mt-1 text-sm leading-6 text-fh-stone">
+                          {card.description}
+                        </p>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-[28px] border border-fh-linen bg-fh-white p-5">
-                  <p className="text-sm text-fh-stone">Best for</p>
-                  <p className="mt-2 font-[family-name:var(--font-manrope)] text-xl font-semibold text-fh-graphite">
-                    EV owners and design-aware homeowners
-                  </p>
-                </div>
-
-                <div className="rounded-[28px] border border-fh-linen bg-fh-sand/50 p-5">
-                  <p className="text-sm text-fh-stone">Experience</p>
-                  <p className="mt-2 font-[family-name:var(--font-manrope)] text-xl font-semibold text-fh-graphite">
-                    Warm, premium, guided
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
-        <PublicLaunchNote />
-      </section>
-
-      <section className="mx-auto max-w-7xl px-6 py-4 lg:px-8">
-        <div className="grid gap-6 lg:grid-cols-3">
-          {premiumSignals.map((item) => (
-            <article
-              key={item.title}
-              className="rounded-[32px] border border-fh-linen bg-fh-white p-8 shadow-sm"
-            >
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-fh-sand text-fh-copper">
-                <Star size={20} />
-              </div>
-              <h2 className="mt-6 font-[family-name:var(--font-manrope)] text-2xl font-semibold text-fh-graphite">
-                {item.title}
-              </h2>
-              <p className="mt-4 text-base leading-7 text-fh-stone">
-                {item.description}
-              </p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section id="services" className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
-        <div className="grid gap-10 lg:grid-cols-[0.86fr_1.14fr] lg:items-end">
-          <div>
-            <p className="text-sm font-semibold tracking-[0.2em] text-fh-copper uppercase">
-              Services
-            </p>
-            <h2 className="mt-4 font-[family-name:var(--font-manrope)] text-3xl font-semibold tracking-tight text-fh-graphite sm:text-4xl">
-              Built for premium home electrification
-            </h2>
-            <p className="mt-4 max-w-lg text-base leading-7 text-fh-stone">
-              FuseHarbor begins with the highest-value services homeowners need
-              when upgrading their homes for modern energy use.
-            </p>
-          </div>
-
-          <div className="grid gap-5 md:grid-cols-2">
-            {services.map((service) => {
-              const Icon = service.icon;
-
-              return (
-                <article
-                  key={service.title}
-                  className="rounded-[30px] border border-fh-linen bg-fh-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-[0_18px_50px_rgba(35,38,43,0.08)]"
-                >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-fh-sand text-fh-copper">
-                    <Icon size={22} />
+                    </div>
                   </div>
-                  <h3 className="mt-5 font-[family-name:var(--font-manrope)] text-xl font-semibold text-fh-graphite">
-                    {service.title}
-                  </h3>
-                  <p className="mt-3 text-sm leading-6 text-fh-stone">
-                    {service.description}
-                  </p>
-                </article>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section
-        id="how-it-works"
-        className="mx-auto max-w-7xl px-6 py-16 lg:px-8"
-      >
-        <div className="rounded-[36px] border border-fh-linen bg-fh-white p-8 shadow-sm lg:p-10">
-          <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
-            <div className="max-w-xl">
-              <p className="text-sm font-semibold tracking-[0.2em] text-fh-moss uppercase">
-                How it works
-              </p>
-              <h2 className="mt-4 font-[family-name:var(--font-manrope)] text-3xl font-semibold tracking-tight text-fh-graphite sm:text-4xl">
-                A cleaner, calmer way to begin
-              </h2>
-              <p className="mt-4 text-base leading-7 text-fh-stone">
-                FuseHarbor is designed for homeowners who want trust, clarity,
-                and a more elevated project experience.
-              </p>
-            </div>
-
-            <div className="grid gap-5 md:grid-cols-2">
-              {steps.map((step) => (
-                <article
-                  key={step.number}
-                  className="rounded-[28px] border border-fh-linen bg-fh-warm-white p-6"
-                >
-                  <p className="text-sm font-semibold tracking-[0.2em] text-fh-copper uppercase">
-                    {step.number}
-                  </p>
-                  <h3 className="mt-4 font-[family-name:var(--font-manrope)] text-xl font-semibold text-fh-graphite">
-                    {step.title}
-                  </h3>
-                  <p className="mt-3 text-sm leading-6 text-fh-stone">
-                    {step.description}
-                  </p>
-                </article>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section
-        id="trust-layer"
-        className="mx-auto max-w-7xl px-6 py-4 lg:px-8"
-      >
-        <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="rounded-[36px] border border-fh-linen bg-fh-white p-8 shadow-sm lg:p-10">
-            <p className="text-sm font-semibold tracking-[0.2em] text-fh-copper uppercase">
-              Why homeowners can trust FuseHarbor
-            </p>
-            <h2 className="mt-4 font-[family-name:var(--font-manrope)] text-3xl font-semibold tracking-tight text-fh-graphite sm:text-4xl">
-              Built to feel clear, guided, and homeowner-first
-            </h2>
-            <p className="mt-4 text-base leading-7 text-fh-stone">
-              FuseHarbor is not trying to feel like a noisy contractor listing
-              site. It is being built as a more premium marketplace experience
-              for homeowners making serious electrification decisions.
-            </p>
-
-            <div className="mt-8 rounded-[28px] border border-fh-sand bg-[linear-gradient(135deg,_#f2ebe1_0%,_#e7d9c8_100%)] p-6">
-              <p className="text-sm font-semibold tracking-[0.2em] text-fh-moss uppercase">
-                Homeowner reassurance
-              </p>
-              <p className="mt-3 text-sm leading-7 text-fh-stone">
-                From the first quote request to the next project step, the goal
-                is to reduce confusion and make homeowners feel more informed,
-                more supported, and more confident about moving forward.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid gap-5 sm:grid-cols-2">
-            {trustLayer.map((item) => (
-              <article
-                key={item.title}
-                className="rounded-[30px] border border-fh-linen bg-fh-white p-6 shadow-sm"
-              >
+      <section id="quote-form" className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
+        <form
+          noValidate
+          onSubmit={handleSubmit}
+          className="grid gap-8 xl:grid-cols-[1.05fr_0.95fr]"
+        >
+          <div className="space-y-8">
+            <div className="rounded-[36px] border border-fh-linen bg-fh-white p-8 shadow-sm lg:p-10">
+              <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-fh-sand text-fh-copper">
-                  <ShieldCheck size={22} />
+                  <Zap size={22} />
                 </div>
-                <h3 className="mt-5 font-[family-name:var(--font-manrope)] text-xl font-semibold text-fh-graphite">
-                  {item.title}
-                </h3>
-                <p className="mt-3 text-sm leading-6 text-fh-stone">
-                  {item.description}
-                </p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section
-        id="why-fuseharbor"
-        className="mx-auto max-w-7xl px-6 py-16 lg:px-8"
-      >
-        <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
-          <div className="rounded-[36px] border border-fh-linen bg-fh-graphite p-8 text-fh-white shadow-sm lg:p-10">
-            <p className="text-sm font-semibold tracking-[0.2em] text-fh-sand uppercase">
-              Why FuseHarbor
-            </p>
-            <h2 className="mt-4 font-[family-name:var(--font-manrope)] text-3xl font-semibold tracking-tight sm:text-4xl">
-              Built to feel different from the usual contractor marketplace
-            </h2>
-            <p className="mt-4 max-w-xl text-base leading-7 text-fh-white/72">
-              FuseHarbor is designed to feel more premium, more thoughtful, and
-              more homeowner-centered than generic lead-gen platforms.
-            </p>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            {benefits.map((item) => (
-              <div
-                key={item}
-                className="rounded-[28px] border border-fh-linen bg-fh-white p-6 shadow-sm"
-              >
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 size={20} className="mt-0.5 text-fh-moss" />
-                  <p className="font-[family-name:var(--font-manrope)] text-lg font-semibold text-fh-graphite">
-                    {item}
+                <div>
+                  <p className="text-sm font-semibold tracking-[0.2em] text-fh-copper uppercase">
+                    Step 1
                   </p>
+                  <h2 className="font-[family-name:var(--font-manrope)] text-2xl font-semibold">
+                    Select your project type
+                  </h2>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      <section id="faq" className="mx-auto max-w-7xl px-6 py-4 lg:px-8">
-        <div className="rounded-[36px] border border-fh-linen bg-fh-white p-8 shadow-sm lg:p-10">
-          <div className="max-w-2xl">
-            <p className="text-sm font-semibold tracking-[0.2em] text-fh-moss uppercase">
-              Homeowner questions
-            </p>
-            <h2 className="mt-4 font-[family-name:var(--font-manrope)] text-3xl font-semibold tracking-tight text-fh-graphite sm:text-4xl">
-              Simple answers before you get started
-            </h2>
-            <p className="mt-4 text-base leading-7 text-fh-stone">
-              A few quick points to make the first step feel more comfortable.
-            </p>
-          </div>
+              <p className="mt-4 max-w-2xl text-base leading-7 text-fh-stone">
+                Choose the service that best matches what you are planning for
+                your home.
+              </p>
 
-          <div className="mt-8 grid gap-4 lg:grid-cols-2">
-            {faqItems.map((item) => (
-              <article
-                key={item.question}
-                className="rounded-[28px] border border-fh-linen bg-fh-warm-white p-6"
+              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                {projectTypes.map((option) => {
+                  const Icon = option.icon;
+                  const isSelected = selectedProjectType === option.title;
+
+                  return (
+                    <button
+                      key={option.title}
+                      type="button"
+                      onClick={() => setSelectedProjectType(option.title)}
+                      className={`rounded-[28px] border p-5 text-left transition ${
+                        isSelected
+                          ? "border-fh-copper bg-fh-white shadow-sm"
+                          : "border-fh-linen bg-fh-warm-white hover:border-fh-copper hover:bg-fh-white"
+                      }`}
+                    >
+                      <div
+                        className={`flex h-12 w-12 items-center justify-center rounded-2xl ${
+                          isSelected
+                            ? "bg-fh-copper text-fh-white"
+                            : "bg-fh-sand text-fh-copper"
+                        }`}
+                      >
+                        <Icon size={22} />
+                      </div>
+                      <h3 className="mt-5 font-[family-name:var(--font-manrope)] text-lg font-semibold text-fh-graphite">
+                        {option.title}
+                      </h3>
+                      <p className="mt-2 text-sm leading-6 text-fh-stone">
+                        {option.description}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="rounded-[36px] border border-fh-linen bg-fh-white p-8 shadow-sm lg:p-10">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-fh-sand text-fh-copper">
+                  <User size={22} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold tracking-[0.2em] text-fh-copper uppercase">
+                    Step 2
+                  </p>
+                  <h2 className="font-[family-name:var(--font-manrope)] text-2xl font-semibold">
+                    Homeowner details
+                  </h2>
+                </div>
+              </div>
+
+              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-1">
+                  <label className="mb-2 block text-sm font-semibold text-fh-graphite">
+                    Full name <span className="text-fh-copper">*</span>
+                  </label>
+                  <input
+                    name="fullName"
+                    type="text"
+                    autoComplete="name"
+                    required
+                    aria-invalid={showValidation && requiredFieldErrors.fullName}
+                    value={form.fullName}
+                    onChange={(event) =>
+                      updateField("fullName", event.target.value)
+                    }
+                    placeholder="Enter your full name"
+                    className={fieldClassName(requiredFieldErrors.fullName)}
+                  />
+                  {showValidation && requiredFieldErrors.fullName ? (
+                    <p className="mt-2 text-xs text-red-600">
+                      Full name is required.
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="sm:col-span-1">
+                  <label className="mb-2 block text-sm font-semibold text-fh-graphite">
+                    Email address <span className="text-fh-copper">*</span>
+                  </label>
+                  <input
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    aria-invalid={showValidation && requiredFieldErrors.email}
+                    value={form.email}
+                    onChange={(event) =>
+                      updateField("email", event.target.value)
+                    }
+                    placeholder="Enter your email address"
+                    className={fieldClassName(requiredFieldErrors.email)}
+                  />
+                  {showValidation && requiredFieldErrors.email ? (
+                    <p className="mt-2 text-xs text-red-600">
+                      Enter a valid email address.
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="mb-2 block text-sm font-semibold text-fh-graphite">
+                    Phone number <span className="text-fh-copper">*</span>
+                  </label>
+                  <input
+                    name="phone"
+                    type="tel"
+                    autoComplete="tel"
+                    inputMode="numeric"
+                    maxLength={14}
+                    required
+                    aria-invalid={showValidation && requiredFieldErrors.phone}
+                    value={formatPhoneNumber(form.phone)}
+                    onChange={(event) => {
+                      const digitsOnly = event.target.value
+                        .replace(/\D/g, "")
+                        .slice(0, 10);
+                      updateField("phone", digitsOnly);
+                    }}
+                    placeholder="Enter 10-digit U.S. phone number"
+                    className={fieldClassName(requiredFieldErrors.phone)}
+                  />
+                  {showValidation && requiredFieldErrors.phone ? (
+                    <p className="mt-2 text-xs text-red-600">
+                      Enter a valid 10-digit U.S. phone number.
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-[36px] border border-fh-linen bg-fh-white p-8 shadow-sm lg:p-10">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-fh-sand text-fh-copper">
+                  <Home size={22} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold tracking-[0.2em] text-fh-copper uppercase">
+                    Step 3
+                  </p>
+                  <h2 className="font-[family-name:var(--font-manrope)] text-2xl font-semibold">
+                    Property details
+                  </h2>
+                </div>
+              </div>
+
+              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className="mb-2 block text-sm font-semibold text-fh-graphite">
+                    Property address <span className="text-fh-copper">*</span>
+                  </label>
+                  <input
+                    name="address"
+                    type="text"
+                    autoComplete="street-address"
+                    required
+                    aria-invalid={showValidation && requiredFieldErrors.address}
+                    value={form.address}
+                    onChange={(event) =>
+                      updateField("address", event.target.value)
+                    }
+                    placeholder="Enter the property address"
+                    className={fieldClassName(requiredFieldErrors.address)}
+                  />
+                  {showValidation && requiredFieldErrors.address ? (
+                    <p className="mt-2 text-xs text-red-600">
+                      Property address is required.
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="sm:col-span-1">
+                  <label className="mb-2 block text-sm font-semibold text-fh-graphite">
+                    City <span className="text-fh-copper">*</span>
+                  </label>
+                  <input
+                    name="city"
+                    type="text"
+                    autoComplete="address-level2"
+                    required
+                    aria-invalid={showValidation && requiredFieldErrors.city}
+                    value={form.city}
+                    onChange={(event) => updateField("city", event.target.value)}
+                    placeholder="Enter city"
+                    className={fieldClassName(requiredFieldErrors.city)}
+                  />
+                  {showValidation && requiredFieldErrors.city ? (
+                    <p className="mt-2 text-xs text-red-600">City is required.</p>
+                  ) : null}
+                </div>
+
+                <div className="sm:col-span-1">
+                  <label className="mb-2 block text-sm font-semibold text-fh-graphite">
+                    ZIP code <span className="text-fh-copper">*</span>
+                  </label>
+                  <input
+                    name="zipCode"
+                    type="text"
+                    autoComplete="postal-code"
+                    inputMode="numeric"
+                    maxLength={5}
+                    required
+                    aria-invalid={showValidation && requiredFieldErrors.zipCode}
+                    value={form.zipCode}
+                    onChange={(event) => {
+                      const digitsOnly = event.target.value
+                        .replace(/\D/g, "")
+                        .slice(0, 5);
+                      updateField("zipCode", digitsOnly);
+                    }}
+                    placeholder="Enter 5-digit ZIP code"
+                    className={fieldClassName(requiredFieldErrors.zipCode)}
+                  />
+                  {showValidation && requiredFieldErrors.zipCode ? (
+                    <p className="mt-2 text-xs text-red-600">
+                      Enter a valid 5-digit U.S. ZIP code.
+                    </p>
+                  ) : null}
+                  {zipValidationMessage ? (
+                    <p className="mt-2 text-xs text-red-600">
+                      {zipValidationMessage}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="mb-2 block text-sm font-semibold text-fh-graphite">
+                    Property type
+                  </label>
+                  <select
+                    name="propertyType"
+                    value={form.propertyType}
+                    onChange={(event) =>
+                      updateField("propertyType", event.target.value)
+                    }
+                    className={inputBaseClassName}
+                  >
+                    {propertyTypes.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative rounded-[36px] border border-fh-linen bg-fh-white p-8 shadow-sm lg:p-10">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-fh-sand text-fh-copper">
+                  <MapPin size={22} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold tracking-[0.2em] text-fh-copper uppercase">
+                    Step 4
+                  </p>
+                  <h2 className="font-[family-name:var(--font-manrope)] text-2xl font-semibold">
+                    Project timing and goals
+                  </h2>
+                </div>
+              </div>
+
+              <div className="mt-8 grid gap-4">
+                {projectGoalOptions.map((option) => {
+                  const isSelected = selectedGoal === option;
+
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setSelectedGoal(option)}
+                      className={`flex items-start gap-3 rounded-[24px] border px-5 py-4 text-left transition ${
+                        isSelected
+                          ? "border-fh-copper bg-fh-white shadow-sm"
+                          : "border-fh-linen bg-fh-warm-white hover:border-fh-copper hover:bg-fh-white"
+                      }`}
+                    >
+                      <CheckCircle2
+                        size={18}
+                        className={`mt-0.5 ${
+                          isSelected ? "text-fh-copper" : "text-fh-moss"
+                        }`}
+                      />
+                      <span className="text-sm leading-6 text-fh-stone">
+                        {option}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-8">
+                <label className="mb-2 block text-sm font-semibold text-fh-graphite">
+                  Additional project notes
+                </label>
+                <textarea
+                  name="notes"
+                  value={form.notes}
+                  onChange={(event) => updateField("notes", event.target.value)}
+                  placeholder="Tell us more about your home, goals, timeline, or anything you want FuseHarbor to know."
+                  rows={6}
+                  className={inputBaseClassName}
+                />
+              </div>
+
+              <div
+                aria-hidden="true"
+                className="absolute left-[-5000px] top-auto h-px w-px overflow-hidden"
               >
-                <div className="flex items-start gap-3">
-                  <CircleHelp size={20} className="mt-0.5 text-fh-copper" />
-                  <div>
-                    <h3 className="font-[family-name:var(--font-manrope)] text-lg font-semibold text-fh-graphite">
-                      {item.question}
-                    </h3>
-                    <p className="mt-3 text-sm leading-6 text-fh-stone">
-                      {item.answer}
+                <label htmlFor="project-website">Website</label>
+                <input
+                  id="project-website"
+                  type="text"
+                  value={honeypotValue}
+                  onChange={(event) => setHoneypotValue(event.target.value)}
+                  autoComplete="off"
+                  tabIndex={-1}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-8">
+            <div className="rounded-[36px] border border-fh-linen bg-fh-white p-8 shadow-sm lg:sticky lg:top-8">
+              <p className="text-sm font-semibold tracking-[0.2em] text-fh-moss uppercase">
+                Quote summary
+              </p>
+              <h2 className="mt-4 font-[family-name:var(--font-manrope)] text-3xl font-semibold">
+                {selectedProject?.title || "A premium intake experience"}
+              </h2>
+              <p className="mt-4 text-base leading-7 text-fh-stone">
+                The summary updates live as the homeowner fills out the quote
+                request.
+              </p>
+
+              <div className="mt-8 grid gap-4">
+                {summaryItems.map((item) => (
+                  <div
+                    key={item.label}
+                    className="rounded-[24px] border border-fh-linen bg-fh-warm-white px-5 py-4"
+                  >
+                    <p className="text-xs font-semibold tracking-[0.18em] text-fh-copper uppercase">
+                      {item.label}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-fh-stone">
+                      {item.value}
                     </p>
                   </div>
-                </div>
-              </article>
-            ))}
+                ))}
+              </div>
+
+              <div className="mt-8 rounded-[28px] border border-fh-sand bg-[linear-gradient(135deg,_#f2ebe1_0%,_#e7d9c8_100%)] p-6">
+                <p className="text-sm font-semibold tracking-[0.2em] text-fh-copper uppercase">
+                  Submission status
+                </p>
+                <h3 className="mt-3 font-[family-name:var(--font-manrope)] text-2xl font-semibold text-fh-graphite">
+                  Ready to submit
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-fh-stone">
+                  Complete the required fields and submit your homeowner quote
+                  request.
+                </p>
+
+                <button
+                  type="submit"
+                  disabled={!isFormValid || isSubmitting}
+                  className={`mt-6 inline-flex items-center justify-center rounded-full px-6 py-4 text-sm font-semibold transition ${
+                    isFormValid && !isSubmitting
+                      ? "bg-fh-graphite text-fh-white hover:opacity-95"
+                      : "cursor-not-allowed bg-fh-stone/35 text-fh-white/85"
+                  }`}
+                >
+                  {isSubmitting ? "Submitting..." : "Submit Quote Request"}
+                </button>
+
+                {showValidation && !isFormValid ? (
+                  <p className="mt-3 text-xs leading-6 text-red-600" role="alert">
+                    Please complete all required fields with valid information
+                    before submitting.
+                  </p>
+                ) : null}
+
+                {submitError ? (
+                  <p className="mt-3 text-xs leading-6 text-red-600" role="alert">
+                    {submitError}
+                  </p>
+                ) : null}
+              </div>
+            </div>
           </div>
-        </div>
+        </form>
       </section>
 
-      <section id="quote" className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
-        <div className="rounded-[40px] border border-fh-sand bg-[linear-gradient(135deg,_#f2ebe1_0%,_#e7d9c8_100%)] p-8 shadow-sm lg:p-12">
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-2xl">
-              <p className="text-sm font-semibold tracking-[0.2em] text-fh-moss uppercase">
-                Launching in Maryland
-              </p>
-              <h2 className="mt-4 font-[family-name:var(--font-manrope)] text-3xl font-semibold tracking-tight text-fh-graphite sm:text-4xl">
-                Start your home electrification project today
-              </h2>
-              <p className="mt-4 text-base leading-7 text-fh-stone">
-                Get matched with trusted pros for EV charging, panel upgrades,
-                heat pumps, and premium homeowner support built for modern homes.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-4 sm:flex-row">
-              <Link
-                href="/get-a-quote"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-fh-graphite px-6 py-4 text-sm font-semibold text-fh-white transition hover:opacity-95"
-              >
-                Get a Quote
-                <ArrowRight size={18} />
-              </Link>
-
-              <Link
-                href="/for-pros"
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-fh-graphite/12 bg-fh-white px-6 py-4 text-sm font-semibold text-fh-graphite transition hover:border-fh-copper hover:text-fh-copper"
-              >
-                Become a Pro
-                <ChevronRight size={18} />
-              </Link>
-            </div>
-          </div>
-        </div>
+      <section className="mx-auto max-w-7xl px-6 py-6 lg:px-8">
+        <PublicLaunchNote
+          title="Maryland-first quote intake, premium rollout"
+          description="FuseHarbor is being launched carefully with a trust-led, quality-first approach. The homeowner quote flow is designed to feel clearer, calmer, and more premium while the marketplace continues becoming more polished and launch-ready."
+        />
       </section>
 
       <SiteFooter />
