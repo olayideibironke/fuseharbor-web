@@ -8,6 +8,7 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
+import { StripeTestCheckoutButton } from "@/components/stripe-test-checkout-button";
 
 function formatSubmittedDate(value: string | undefined) {
   if (!value) {
@@ -20,10 +21,20 @@ function formatSubmittedDate(value: string | undefined) {
     return "Saved just now";
   }
 
-  return new Intl.DateTimeFormat("en-US", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
+  const month = date.getUTCMonth() + 1;
+  const day = date.getUTCDate();
+  const year = date.getUTCFullYear();
+
+  let hours = date.getUTCHours();
+  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+  const suffix = hours >= 12 ? "PM" : "AM";
+
+  hours = hours % 12;
+  if (hours === 0) {
+    hours = 12;
+  }
+
+  return `${month}/${day}/${year} ${hours}:${minutes} ${suffix} UTC`;
 }
 
 function getProjectIcon(projectType: string) {
@@ -43,12 +54,16 @@ export default async function GetAQuoteSuccessPage({
     id?: string;
     submittedAt?: string;
     projectType?: string;
+    checkout?: string;
+    session_id?: string;
   }>;
 }) {
   const params = await searchParams;
   const requestId = params.id ?? "";
   const submittedAt = params.submittedAt;
   const projectType = params.projectType ?? "Home electrification project";
+  const checkoutStatus = params.checkout ?? "";
+  const sessionId = params.session_id ?? "";
   const ProjectIcon = getProjectIcon(projectType);
 
   return (
@@ -77,6 +92,20 @@ export default async function GetAQuoteSuccessPage({
               <Clock3 size={16} className="text-fh-copper" />
               Submitted {formatSubmittedDate(submittedAt)}
             </div>
+
+            {checkoutStatus === "success" && sessionId ? (
+              <div className="inline-flex items-center gap-2 rounded-full border border-fh-linen bg-fh-white px-4 py-2 text-sm font-semibold text-fh-graphite shadow-sm">
+                <CheckCircle2 size={16} className="text-fh-copper" />
+                Test payment completed
+              </div>
+            ) : null}
+
+            {checkoutStatus === "cancelled" ? (
+              <div className="inline-flex items-center gap-2 rounded-full border border-fh-linen bg-fh-white px-4 py-2 text-sm font-semibold text-fh-graphite shadow-sm">
+                <Clock3 size={16} className="text-fh-copper" />
+                Test payment cancelled
+              </div>
+            ) : null}
           </div>
         </div>
       </section>
@@ -198,6 +227,24 @@ export default async function GetAQuoteSuccessPage({
                 <p className="mt-3 text-sm leading-6 text-fh-stone">
                   {projectType}
                 </p>
+              </div>
+
+              <div className="mt-6 rounded-[24px] border border-fh-linen bg-white/80 p-5">
+                <p className="text-xs font-semibold tracking-[0.18em] text-fh-copper uppercase">
+                  Test payment
+                </p>
+                <p className="mt-3 text-sm leading-6 text-fh-stone">
+                  Use this test button to verify the Stripe checkout flow before
+                  we wire the final production payment experience.
+                </p>
+
+                <div className="mt-4">
+                  <StripeTestCheckoutButton
+                    requestId={requestId}
+                    submittedAt={submittedAt}
+                    projectType={projectType}
+                  />
+                </div>
               </div>
 
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
