@@ -8,7 +8,6 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
-import { StripeTestCheckoutButton } from "@/components/stripe-test-checkout-button";
 
 function formatSubmittedDate(value: string | undefined) {
   if (!value) {
@@ -54,16 +53,12 @@ export default async function GetAQuoteSuccessPage({
     id?: string;
     submittedAt?: string;
     projectType?: string;
-    checkout?: string;
-    session_id?: string;
   }>;
 }) {
   const params = await searchParams;
   const requestId = params.id ?? "";
   const submittedAt = params.submittedAt;
   const projectType = params.projectType ?? "Home electrification project";
-  const checkoutStatus = params.checkout ?? "";
-  const sessionId = params.session_id ?? "";
   const ProjectIcon = getProjectIcon(projectType);
 
   return (
@@ -92,20 +87,6 @@ export default async function GetAQuoteSuccessPage({
               <Clock3 size={16} className="text-fh-copper" />
               Submitted {formatSubmittedDate(submittedAt)}
             </div>
-
-            {checkoutStatus === "success" && sessionId ? (
-              <div className="inline-flex items-center gap-2 rounded-full border border-fh-linen bg-fh-white px-4 py-2 text-sm font-semibold text-fh-graphite shadow-sm">
-                <CheckCircle2 size={16} className="text-fh-copper" />
-                Test payment completed
-              </div>
-            ) : null}
-
-            {checkoutStatus === "cancelled" ? (
-              <div className="inline-flex items-center gap-2 rounded-full border border-fh-linen bg-fh-white px-4 py-2 text-sm font-semibold text-fh-graphite shadow-sm">
-                <Clock3 size={16} className="text-fh-copper" />
-                Test payment cancelled
-              </div>
-            ) : null}
           </div>
         </div>
       </section>
@@ -125,10 +106,7 @@ export default async function GetAQuoteSuccessPage({
               <div className="mt-8 grid gap-4">
                 <div className="rounded-[24px] border border-fh-linen bg-fh-warm-white px-5 py-4">
                   <div className="flex items-start gap-3">
-                    <ShieldCheck
-                      size={18}
-                      className="mt-0.5 shrink-0 text-fh-copper"
-                    />
+                    <ShieldCheck size={18} className="mt-0.5 shrink-0 text-fh-copper" />
                     <div>
                       <p className="text-sm font-semibold text-fh-graphite">
                         Your request enters the homeowner review flow
@@ -143,10 +121,7 @@ export default async function GetAQuoteSuccessPage({
 
                 <div className="rounded-[24px] border border-fh-linen bg-fh-warm-white px-5 py-4">
                   <div className="flex items-start gap-3">
-                    <Mail
-                      size={18}
-                      className="mt-0.5 shrink-0 text-fh-copper"
-                    />
+                    <Mail size={18} className="mt-0.5 shrink-0 text-fh-copper" />
                     <div>
                       <p className="text-sm font-semibold text-fh-graphite">
                         Follow-up can use your submitted contact details
@@ -161,10 +136,7 @@ export default async function GetAQuoteSuccessPage({
 
                 <div className="rounded-[24px] border border-fh-linen bg-fh-warm-white px-5 py-4">
                   <div className="flex items-start gap-3">
-                    <ProjectIcon
-                      size={18}
-                      className="mt-0.5 shrink-0 text-fh-copper"
-                    />
+                    <ProjectIcon size={18} className="mt-0.5 shrink-0 text-fh-copper" />
                     <div>
                       <p className="text-sm font-semibold text-fh-graphite">
                         Your selected project type has been captured
@@ -178,10 +150,7 @@ export default async function GetAQuoteSuccessPage({
 
                 <div className="rounded-[24px] border border-fh-linen bg-fh-warm-white px-5 py-4">
                   <div className="flex items-start gap-3">
-                    <Sparkles
-                      size={18}
-                      className="mt-0.5 shrink-0 text-fh-copper"
-                    />
+                    <Sparkles size={18} className="mt-0.5 shrink-0 text-fh-copper" />
                     <div>
                       <p className="text-sm font-semibold text-fh-graphite">
                         Premium homeowner intake continues
@@ -206,10 +175,6 @@ export default async function GetAQuoteSuccessPage({
               <h2 className="mt-3 font-[family-name:var(--font-manrope)] text-2xl font-semibold text-fh-graphite">
                 Your quote request reference has been created
               </h2>
-              <p className="mt-3 text-sm leading-7 text-fh-stone">
-                This is your stable confirmation page for the homeowner quote
-                submission.
-              </p>
 
               <div className="mt-6 rounded-[24px] border border-fh-linen bg-white/80 p-5">
                 <p className="text-xs font-semibold tracking-[0.18em] text-fh-copper uppercase">
@@ -227,24 +192,6 @@ export default async function GetAQuoteSuccessPage({
                 <p className="mt-3 text-sm leading-6 text-fh-stone">
                   {projectType}
                 </p>
-              </div>
-
-              <div className="mt-6 rounded-[24px] border border-fh-linen bg-white/80 p-5">
-                <p className="text-xs font-semibold tracking-[0.18em] text-fh-copper uppercase">
-                  Test payment
-                </p>
-                <p className="mt-3 text-sm leading-6 text-fh-stone">
-                  Use this test button to verify the Stripe checkout flow before
-                  we wire the final production payment experience.
-                </p>
-
-                <div className="mt-4">
-                  <StripeTestCheckoutButton
-                    requestId={requestId}
-                    submittedAt={submittedAt}
-                    projectType={projectType}
-                  />
-                </div>
               </div>
 
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -269,17 +216,12 @@ export default async function GetAQuoteSuccessPage({
                 Confirmation status
               </p>
               <h3 className="mt-4 font-[family-name:var(--font-manrope)] text-2xl font-semibold">
-                Stable success page
+                Quote request saved
               </h3>
               <p className="mt-4 text-base leading-7 text-fh-stone">
-                This success page can be refreshed without losing the
-                confirmation state.
+                Quote requests are free. Payment will only belong in the later
+                homeowner-to-pro project workflow.
               </p>
-
-              <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-fh-linen bg-fh-warm-white px-4 py-2 text-sm font-semibold text-fh-graphite">
-                <CheckCircle2 size={15} className="text-fh-copper" />
-                Refresh-safe confirmation
-              </div>
             </div>
           </div>
         </div>
