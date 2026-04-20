@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
   ChevronLeft,
@@ -14,12 +14,13 @@ import { AdminHeader } from "@/components/admin-header";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 export default function AdminAccessPage() {
+  const hasBootedRef = useRef(false);
+
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCheckingSession, setIsCheckingSession] = useState(true);
-  const [isCompletingHashLogin, setIsCompletingHashLogin] = useState(false);
+  const [isBooting, setIsBooting] = useState(true);
+  const [statusMessage, setStatusMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
 
   const trimmedEmail = email.trim();
   const emailLooksValid =
@@ -27,17 +28,27 @@ export default function AdminAccessPage() {
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
 
   useEffect(() => {
-    let isMounted = true;
-    const supabase = getSupabaseBrowserClient();
+    if (hasBootedRef.current) {
+      return;
+    }
 
-    async function boot() {
+    hasBootedRef.current = true;
+
+    let isMounted = true;
+
+    async function bootAdminAccess() {
       try {
+        const supabase = getSupabaseBrowserClient();
+        const hash = window.location.hash || "";
+
         setErrorMessage("");
 
-        const hash = window.location.hash;
-
         if (hash.includes("access_token=") && hash.includes("refresh_token=")) {
-          setIsCompletingHashLogin(true);
+          if (!isMounted) {
+            return;
+          }
+
+          setStatusMessage("Completing secure sign-in...");
 
           const hashParams = new URLSearchParams(hash.replace(/^#/, ""));
           const accessToken = hashParams.get("access_token");
@@ -61,6 +72,9 @@ export default function AdminAccessPage() {
             document.title,
             window.location.pathname + window.location.search,
           );
+
+          window.location.href = "/admin";
+          return;
         }
 
         const {
@@ -72,9 +86,12 @@ export default function AdminAccessPage() {
         }
 
         if (session) {
-          window.location.replace("/admin");
+          setStatusMessage("Admin session found. Opening workspace...");
+          window.location.href = "/admin";
           return;
         }
+
+        setStatusMessage("");
       } catch (error) {
         if (!isMounted) {
           return;
@@ -83,40 +100,27 @@ export default function AdminAccessPage() {
         const message =
           error instanceof Error
             ? error.message
-            : "Something went wrong while completing admin sign-in.";
+            : "Something went wrong while preparing admin access.";
 
         setErrorMessage(message);
+        setStatusMessage("");
       } finally {
         if (isMounted) {
-          setIsCompletingHashLogin(false);
-          setIsCheckingSession(false);
+          setIsBooting(false);
         }
       }
     }
 
-    boot();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!isMounted) {
-        return;
-      }
-
-      if (event === "SIGNED_IN" && session) {
-        window.location.replace("/admin");
-      }
-    });
+    bootAdminAccess();
 
     return () => {
       isMounted = false;
-      subscription.unsubscribe();
     };
   }, []);
 
   async function handleMagicLink() {
     setErrorMessage("");
-    setSuccessMessage("");
+    setStatusMessage("");
 
     if (!emailLooksValid) {
       setErrorMessage("Enter a valid email address.");
@@ -139,8 +143,8 @@ export default function AdminAccessPage() {
         throw error;
       }
 
-      setSuccessMessage(
-        "Magic link sent. Check your email and open the newest link.",
+      setStatusMessage(
+        "Magic link sent. Check your email and open the newest link once.",
       );
     } catch (error) {
       const message =
@@ -149,6 +153,7 @@ export default function AdminAccessPage() {
           : "Something went wrong while sending the magic link.";
 
       setErrorMessage(message);
+      setStatusMessage("");
     } finally {
       setIsSubmitting(false);
     }
@@ -278,7 +283,7 @@ export default function AdminAccessPage() {
                 onChange={(event) => {
                   setEmail(event.target.value);
                   setErrorMessage("");
-                  setSuccessMessage("");
+                  setStatusMessage("");
                 }}
                 placeholder="Enter your admin email"
                 className={`w-full rounded-[20px] border px-4 py-4 text-sm text-fh-graphite outline-none transition placeholder:text-fh-stone/80 ${
@@ -292,31 +297,19 @@ export default function AdminAccessPage() {
             <button
               type="button"
               onClick={handleMagicLink}
-              disabled={
-                !emailLooksValid ||
-                isSubmitting ||
-                isCheckingSession ||
-                isCompletingHashLogin
-              }
+              disabled={!emailLooksValid || isSubmitting || isBooting}
               className={`mt-6 inline-flex items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-semibold transition ${
-                emailLooksValid &&
-                !isSubmitting &&
-                !isCheckingSession &&
-                !isCompletingHashLogin
+                emailLooksValid && !isSubmitting && !isBooting
                   ? "bg-fh-graphite text-fh-white hover:opacity-95"
                   : "cursor-not-allowed bg-fh-stone/35 text-fh-white/85"
               }`}
             >
-              {isCompletingHashLogin
-                ? "Completing sign-in..."
-                : isCheckingSession
-                  ? "Checking session..."
-                  : isSubmitting
-                    ? "Sending link..."
-                    : "Send Magic Link"}
-              {!isSubmitting && !isCheckingSession && !isCompletingHashLogin ? (
-                <ArrowRight size={16} />
-              ) : null}
+              {isBooting
+                ? "Preparing access..."
+                : isSubmitting
+                  ? "Sending link..."
+                  : "Send Magic Link"}
+              {!isSubmitting && !isBooting ? <ArrowRight size={16} /> : null}
             </button>
 
             {errorMessage ? (
@@ -325,10 +318,10 @@ export default function AdminAccessPage() {
               </p>
             ) : null}
 
-            {successMessage ? (
+            {statusMessage ? (
               <div className="mt-4 rounded-[20px] border border-green-200 bg-green-50 px-4 py-4">
                 <p className="text-sm leading-6 text-green-700">
-                  {successMessage}
+                  {statusMessage}
                 </p>
               </div>
             ) : null}
