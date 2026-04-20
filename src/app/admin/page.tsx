@@ -108,8 +108,12 @@ export default function AdminHomePage() {
           { count: quoteRequestCount, error: quoteError },
           { count: proRequestCount, error: proError },
         ] = await Promise.all([
-          supabase.from("quote_requests").select("id", { count: "exact", head: true }),
-          supabase.from("pro_interest_requests").select("id", { count: "exact", head: true }),
+          supabase
+            .from("quote_requests")
+            .select("id", { count: "exact", head: true }),
+          supabase
+            .from("pro_interest_requests")
+            .select("id", { count: "exact", head: true }),
         ]);
 
         if (quoteError) {
@@ -461,37 +465,3 @@ export default function AdminHomePage() {
     </main>
   );
 }
-PS C:\dev\fuseHarbor\fuseharbor-web> Write-Host "`n=== SUPABASE BROWSER ==="
-
-=== SUPABASE BROWSER ===
-PS C:\dev\fuseHarbor\fuseharbor-web> Get-Content .\src\lib\supabase-browser.ts
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-
-let browserClient: SupabaseClient | null = null;
-
-export function getSupabaseBrowserClient() {
-  if (browserClient) {
-    return browserClient;
-  }
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      "Missing Supabase environment variables. Check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local.",
-    );
-  }
-
-  browserClient = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      flowType: "implicit",
-    },
-  });
-
-  return browserClient;
-}
-PS C:\dev\fuseHarbor\fuseharbor-web>
