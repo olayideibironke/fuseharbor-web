@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
   ChevronLeft,
@@ -16,8 +16,11 @@ import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 export default function AdminAccessPage() {
   const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [isCompletingHashLogin, setIsCompletingHashLogin] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -25,6 +28,95 @@ export default function AdminAccessPage() {
   const emailLooksValid =
     trimmedEmail.length > 0 &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
+
+  useEffect(() => {
+    let isMounted = true;
+    const supabase = getSupabaseBrowserClient();
+
+    async function completeHashLoginIfNeeded() {
+      try {
+        const hash = window.location.hash;
+
+        if (hash.includes("access_token=") && hash.includes("refresh_token=")) {
+          if (isMounted) {
+            setIsCompletingHashLogin(true);
+            setErrorMessage("");
+          }
+
+          const hashParams = new URLSearchParams(hash.replace(/^#/, ""));
+          const accessToken = hashParams.get("access_token");
+          const refreshToken = hashParams.get("refresh_token");
+
+          if (!accessToken || !refreshToken) {
+            throw new Error("Magic link tokens were missing from the URL.");
+          }
+
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+
+          if (error) {
+            throw error;
+          }
+
+          window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname + window.location.search,
+          );
+        }
+
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (session) {
+          window.location.replace("/admin");
+          return;
+        }
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Something went wrong while completing admin sign-in.";
+
+        setErrorMessage(message);
+      } finally {
+        if (isMounted) {
+          setIsCompletingHashLogin(false);
+          setIsCheckingSession(false);
+        }
+      }
+    }
+
+    completeHashLoginIfNeeded();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!isMounted) {
+        return;
+      }
+
+      if (event === "SIGNED_IN" && session) {
+        window.location.replace("/admin");
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [router]);
 
   async function handleMagicLink() {
     setErrorMessage("");
@@ -39,12 +131,11 @@ export default function AdminAccessPage() {
       setIsSubmitting(true);
 
       const supabase = getSupabaseBrowserClient();
-      const redirectTo = `${window.location.origin}/admin`;
 
       const { error } = await supabase.auth.signInWithOtp({
         email: trimmedEmail,
         options: {
-          emailRedirectTo: redirectTo,
+          emailRedirectTo: `${window.location.origin}/admin/access`,
         },
       });
 
@@ -53,7 +144,7 @@ export default function AdminAccessPage() {
       }
 
       setSuccessMessage(
-        "Magic link sent. Check your email and use the link to continue to admin access.",
+        "Magic link sent. Check your email and open the newest link.",
       );
     } catch (error) {
       const message =
@@ -205,15 +296,31 @@ export default function AdminAccessPage() {
             <button
               type="button"
               onClick={handleMagicLink}
-              disabled={!emailLooksValid || isSubmitting}
+              disabled={
+                !emailLooksValid ||
+                isSubmitting ||
+                isCheckingSession ||
+                isCompletingHashLogin
+              }
               className={`mt-6 inline-flex items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-semibold transition ${
-                emailLooksValid && !isSubmitting
+                emailLooksValid &&
+                !isSubmitting &&
+                !isCheckingSession &&
+                !isCompletingHashLogin
                   ? "bg-fh-graphite text-fh-white hover:opacity-95"
                   : "cursor-not-allowed bg-fh-stone/35 text-fh-white/85"
               }`}
             >
-              {isSubmitting ? "Sending link..." : "Send Magic Link"}
-              {!isSubmitting ? <ArrowRight size={16} /> : null}
+              {isCompletingHashLogin
+                ? "Completing sign-in..."
+                : isCheckingSession
+                  ? "Checking session..."
+                  : isSubmitting
+                    ? "Sending link..."
+                    : "Send Magic Link"}
+              {!isSubmitting && !isCheckingSession && !isCompletingHashLogin ? (
+                <ArrowRight size={16} />
+              ) : null}
             </button>
 
             {errorMessage ? (
