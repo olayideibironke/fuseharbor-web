@@ -9,14 +9,11 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { AdminFooter } from "@/components/admin-footer";
 import { AdminHeader } from "@/components/admin-header";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 export default function AdminAccessPage() {
-  const router = useRouter();
-
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
@@ -33,15 +30,14 @@ export default function AdminAccessPage() {
     let isMounted = true;
     const supabase = getSupabaseBrowserClient();
 
-    async function completeHashLoginIfNeeded() {
+    async function boot() {
       try {
+        setErrorMessage("");
+
         const hash = window.location.hash;
 
         if (hash.includes("access_token=") && hash.includes("refresh_token=")) {
-          if (isMounted) {
-            setIsCompletingHashLogin(true);
-            setErrorMessage("");
-          }
+          setIsCompletingHashLogin(true);
 
           const hashParams = new URLSearchParams(hash.replace(/^#/, ""));
           const accessToken = hashParams.get("access_token");
@@ -98,7 +94,7 @@ export default function AdminAccessPage() {
       }
     }
 
-    completeHashLoginIfNeeded();
+    boot();
 
     const {
       data: { subscription },
@@ -116,7 +112,7 @@ export default function AdminAccessPage() {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [router]);
+  }, []);
 
   async function handleMagicLink() {
     setErrorMessage("");
