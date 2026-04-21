@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
+import { createClient } from "@supabase/supabase-js";
 import { getStripeServer } from "@/lib/stripe";
 
 type CheckoutRequestBody = {
-  id?: string;
-  submittedAt?: string;
-  projectType?: string;
+  token?: string;
+};
+
+type PublicPaymentJobRow = {
+  id: string;
+  public_access_token: string;
+  scope_summary: string | null;
+  total_price_cents: number;
+  payment_status: string;
+  created_at: string;
 };
 
 function getBaseUrl(host: string, protocolHeader: string | null) {
@@ -16,23 +24,35 @@ function getBaseUrl(host: string, protocolHeader: string | null) {
   return `${protocol}://${host}`;
 }
 
+function getPublicSupabaseServer() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      "Missing Supabase environment variables. Check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.",
+    );
+  }
+
+  return createClient(supabaseUrl, supabaseAnonKey);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const stripe = getStripeServer();
 
-    const priceId = process.env.STRIPE_TEST_PRICE_ID?.trim();
+    const body = (await request.json().catch(() => ({}))) as CheckoutRequestBody;
+    const paymentToken = body.token?.trim();
 
-    if (!priceId) {
+    if (!paymentToken) {
       return NextResponse.json(
         {
           ok: false,
-          error: "Missing STRIPE_TEST_PRICE_ID environment variable.",
+          error: "Missing payment token.",
         },
-        { status: 500 },
+        { status: 400 },
       );
     }
-
-    const body = (await request.json().catch(() => ({}))) as CheckoutRequestBody;
 
     const headerStore = await headers();
     const host = headerStore.get("host");
@@ -50,55 +70,77 @@ export async function POST(request: NextRequest) {
     const forwardedProto = headerStore.get("x-forwarded-proto");
     const baseUrl = getBaseUrl(host, forwardedProto);
 
-    const successParams = new URLSearchParams();
+    const supabase = getPublicSupabaseServer();
 
-    if (body.id?.trim()) {
-      successParams.set("id", body.id.trim());
+    const { data, error } = await supabase.rpc("get_public_payment_job", {
+      payment_token: paymentToken,
+    });
+
+    if (error) {
+      throw error;
     }
 
-    if (body.submittedAt?.trim()) {
-      successParams.set("submittedAt", body.submittedAt.trim());
+    const rows = (data as PublicPaymentJobRow[] | null) ?? [];
+    const paymentJob = rows[0] ?? null;
+
+    if (!paymentJob) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Payment job not found.",
+        },
+        { status: 404 },
+      );
     }
 
-    if (body.projectType?.trim()) {
-      successParams.set("projectType", body.projectType.trim());
+    if (paymentJob.payment_status !== "awaiting_payment") {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "This payment job is not ready for checkout.",
+        },
+        { status: 400 },
+      );
     }
 
-    successParams.set("checkout", "success");
-    successParams.set("session_id", "{CHECKOUT_SESSION_ID}");
-
-    const cancelParams = new URLSearchParams();
-
-    if (body.id?.trim()) {
-      cancelParams.set("id", body.id.trim());
+    if (
+      !Number.isFinite(paymentJob.total_price_cents) ||
+      paymentJob.total_price_cents <= 0
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "This payment job does not have a valid payable amount.",
+        },
+        { status: 400 },
+      );
     }
-
-    if (body.submittedAt?.trim()) {
-      cancelParams.set("submittedAt", body.submittedAt.trim());
-    }
-
-    if (body.projectType?.trim()) {
-      cancelParams.set("projectType", body.projectType.trim());
-    }
-
-    cancelParams.set("checkout", "cancelled");
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
       line_items: [
         {
-          price: priceId,
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: "FuseHarbor Project Payment",
+              description:
+                paymentJob.scope_summary?.trim() ||
+                "Approved FuseHarbor homeowner project payment",
+            },
+            unit_amount: paymentJob.total_price_cents,
+          },
           quantity: 1,
         },
       ],
-      success_url: `${baseUrl}/get-a-quote/success?${successParams.toString()}`,
-      cancel_url: `${baseUrl}/get-a-quote/success?${cancelParams.toString()}`,
+      success_url: `${baseUrl}/pay/${paymentToken}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/pay/${paymentToken}?checkout=cancelled`,
       metadata: {
         source: "fuseharbor-web",
-        flow: "quote-checkout-test",
-        requestId: body.id?.trim() || "",
-        projectType: body.projectType?.trim() || "",
+        flow: "payment-job-checkout",
+        paymentJobId: paymentJob.id,
+        paymentToken,
       },
     });
 

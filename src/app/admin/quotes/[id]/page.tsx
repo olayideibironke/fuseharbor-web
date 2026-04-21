@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   CalendarDays,
   ChevronLeft,
+  CreditCard,
+  DollarSign,
   LockKeyhole,
   LogOut,
   Mail,
@@ -59,6 +61,31 @@ type WorkflowFormState = {
   outreach_log: string;
 };
 
+type PaymentJobRow = {
+  id: string;
+  quote_request_id: string;
+  assigned_pro_request_id: string | null;
+  scope_summary: string | null;
+  total_price_cents: number;
+  platform_fee_percent: number;
+  platform_fee_cents: number;
+  pro_payout_cents: number;
+  payment_status: string;
+  stripe_checkout_session_id: string | null;
+  stripe_payment_intent_id: string | null;
+  paid_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type PaymentJobFormState = {
+  assigned_pro_request_id: string;
+  scope_summary: string;
+  total_price_dollars: string;
+  platform_fee_percent: string;
+  payment_status: string;
+};
+
 const statusOptions = ["new", "contacted", "qualified", "closed"] as const;
 
 const preferredContactOptions = ["", "email", "phone", "text"] as const;
@@ -71,6 +98,16 @@ const contactOutcomeOptions = [
   "connected",
   "needs_follow_up",
   "not_interested",
+] as const;
+
+const paymentStatusOptions = [
+  "draft",
+  "awaiting_homeowner_approval",
+  "awaiting_payment",
+  "paid",
+  "cancelled",
+  "payout_pending",
+  "payout_sent",
 ] as const;
 
 function formatCreatedAt(value: string) {
@@ -102,6 +139,23 @@ function formatDateOnly(value: string | null, fallback: string) {
   }).format(date);
 }
 
+function formatDateTime(value: string | null, fallback: string) {
+  if (!value) {
+    return fallback;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return fallback;
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
 function formatStatusLabel(status: string) {
   if (!status) {
     return "new";
@@ -118,6 +172,51 @@ function formatLabel(value: string | null, fallback: string) {
   return value.replaceAll("_", " ");
 }
 
+function formatCurrencyFromCents(value: number | null | undefined) {
+  const cents = typeof value === "number" && Number.isFinite(value) ? value : 0;
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(cents / 100);
+}
+
+function dollarsStringToCents(value: string) {
+  const normalized = value.replace(/[^0-9.]/g, "").trim();
+
+  if (!normalized) {
+    return 0;
+  }
+
+  const parsed = Number(normalized);
+
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return NaN;
+  }
+
+  return Math.round(parsed * 100);
+}
+
+function percentStringToNumber(value: string) {
+  const normalized = value.replace(/[^0-9.]/g, "").trim();
+
+  if (!normalized) {
+    return NaN;
+  }
+
+  const parsed = Number(normalized);
+
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return NaN;
+  }
+
+  return parsed;
+}
+
+function centsToDollarsString(value: number) {
+  return (value / 100).toFixed(2);
+}
+
 function statusBadgeClassName(status: string) {
   const normalized = status.toLowerCase();
 
@@ -127,6 +226,25 @@ function statusBadgeClassName(status: string) {
     case "qualified":
       return "bg-green-100 text-green-700";
     case "closed":
+      return "bg-fh-graphite text-fh-white";
+    default:
+      return "bg-fh-warm-white text-fh-moss border border-fh-linen";
+  }
+}
+
+function paymentStatusBadgeClassName(status: string) {
+  switch (status) {
+    case "awaiting_homeowner_approval":
+      return "bg-amber-100 text-amber-700";
+    case "awaiting_payment":
+      return "bg-fh-sand text-fh-copper";
+    case "paid":
+      return "bg-green-100 text-green-700";
+    case "cancelled":
+      return "bg-red-100 text-red-700";
+    case "payout_pending":
+      return "bg-blue-100 text-blue-700";
+    case "payout_sent":
       return "bg-fh-graphite text-fh-white";
     default:
       return "bg-fh-warm-white text-fh-moss border border-fh-linen";
@@ -163,6 +281,26 @@ function toWorkflowState(quote: QuoteRequestRow): WorkflowFormState {
   };
 }
 
+function toPaymentJobFormState(paymentJob: PaymentJobRow | null): PaymentJobFormState {
+  if (!paymentJob) {
+    return {
+      assigned_pro_request_id: "",
+      scope_summary: "",
+      total_price_dollars: "",
+      platform_fee_percent: "15.00",
+      payment_status: "draft",
+    };
+  }
+
+  return {
+    assigned_pro_request_id: paymentJob.assigned_pro_request_id ?? "",
+    scope_summary: paymentJob.scope_summary ?? "",
+    total_price_dollars: centsToDollarsString(paymentJob.total_price_cents ?? 0),
+    platform_fee_percent: String(paymentJob.platform_fee_percent ?? 15),
+    payment_status: paymentJob.payment_status || "draft",
+  };
+}
+
 export default function AdminQuoteDetailPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
@@ -170,6 +308,10 @@ export default function AdminQuoteDetailPage() {
 
   const [quote, setQuote] = useState<QuoteRequestRow | null>(null);
   const [workflow, setWorkflow] = useState<WorkflowFormState | null>(null);
+  const [paymentJob, setPaymentJob] = useState<PaymentJobRow | null>(null);
+  const [paymentJobForm, setPaymentJobForm] = useState<PaymentJobFormState>(
+    toPaymentJobFormState(null),
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -179,6 +321,9 @@ export default function AdminQuoteDetailPage() {
   const [saveMessage, setSaveMessage] = useState("");
   const [saveError, setSaveError] = useState("");
   const [quoteNotFound, setQuoteNotFound] = useState(false);
+  const [isSavingPaymentJob, setIsSavingPaymentJob] = useState(false);
+  const [paymentJobSaveMessage, setPaymentJobSaveMessage] = useState("");
+  const [paymentJobSaveError, setPaymentJobSaveError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -256,7 +401,7 @@ export default function AdminQuoteDetailPage() {
 
     let isMounted = true;
 
-    async function loadQuote() {
+    async function loadQuoteAndPaymentJob() {
       try {
         setIsLoading(true);
         setErrorMessage("");
@@ -264,29 +409,45 @@ export default function AdminQuoteDetailPage() {
 
         const supabase = getSupabaseBrowserClient();
 
-        const { data, error } = await supabase
+        const { data: quoteData, error: quoteError } = await supabase
           .from("quote_requests")
           .select("*")
           .eq("id", quoteId)
           .maybeSingle();
 
-        if (error) {
-          throw error;
+        if (quoteError) {
+          throw quoteError;
         }
 
-        if (!data) {
+        if (!quoteData) {
           if (isMounted) {
             setQuote(null);
             setWorkflow(null);
+            setPaymentJob(null);
+            setPaymentJobForm(toPaymentJobFormState(null));
             setQuoteNotFound(true);
           }
           return;
         }
 
+        const { data: paymentJobData, error: paymentJobError } = await supabase
+          .from("payment_jobs")
+          .select("*")
+          .eq("quote_request_id", quoteId)
+          .maybeSingle();
+
+        if (paymentJobError) {
+          throw paymentJobError;
+        }
+
         if (isMounted) {
-          const row = data as QuoteRequestRow;
-          setQuote(row);
-          setWorkflow(toWorkflowState(row));
+          const quoteRow = quoteData as QuoteRequestRow;
+          const paymentJobRow = (paymentJobData as PaymentJobRow | null) ?? null;
+
+          setQuote(quoteRow);
+          setWorkflow(toWorkflowState(quoteRow));
+          setPaymentJob(paymentJobRow);
+          setPaymentJobForm(toPaymentJobFormState(paymentJobRow));
           setQuoteNotFound(false);
         }
       } catch (error) {
@@ -299,6 +460,8 @@ export default function AdminQuoteDetailPage() {
           setErrorMessage(message);
           setQuote(null);
           setWorkflow(null);
+          setPaymentJob(null);
+          setPaymentJobForm(toPaymentJobFormState(null));
           setQuoteNotFound(false);
         }
       } finally {
@@ -308,7 +471,7 @@ export default function AdminQuoteDetailPage() {
       }
     }
 
-    loadQuote();
+    loadQuoteAndPaymentJob();
 
     return () => {
       isMounted = false;
@@ -388,6 +551,103 @@ export default function AdminQuoteDetailPage() {
     }
   }
 
+  async function handleSavePaymentJob() {
+    if (!quoteId) {
+      return;
+    }
+
+    try {
+      setIsSavingPaymentJob(true);
+      setPaymentJobSaveMessage("");
+      setPaymentJobSaveError("");
+
+      const totalPriceCents = dollarsStringToCents(paymentJobForm.total_price_dollars);
+      const feePercent = percentStringToNumber(paymentJobForm.platform_fee_percent);
+
+      if (Number.isNaN(totalPriceCents)) {
+        setPaymentJobSaveError("Enter a valid total price.");
+        return;
+      }
+
+      if (Number.isNaN(feePercent)) {
+        setPaymentJobSaveError("Enter a valid platform fee percent.");
+        return;
+      }
+
+      if (feePercent < 0 || feePercent > 100) {
+        setPaymentJobSaveError("Platform fee percent must be between 0 and 100.");
+        return;
+      }
+
+      const platformFeeCents = Math.round(totalPriceCents * (feePercent / 100));
+      const proPayoutCents = Math.max(totalPriceCents - platformFeeCents, 0);
+
+      const supabase = getSupabaseBrowserClient();
+
+      const payload = {
+        quote_request_id: quoteId,
+        assigned_pro_request_id:
+          paymentJobForm.assigned_pro_request_id.trim() || null,
+        scope_summary: paymentJobForm.scope_summary.trim() || null,
+        total_price_cents: totalPriceCents,
+        platform_fee_percent: feePercent,
+        platform_fee_cents: platformFeeCents,
+        pro_payout_cents: proPayoutCents,
+        payment_status: paymentJobForm.payment_status || "draft",
+      };
+
+      const { data, error } = await supabase
+        .from("payment_jobs")
+        .upsert(payload, { onConflict: "quote_request_id" })
+        .select("*")
+        .maybeSingle();
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data) {
+        throw new Error("Payment job save returned no record.");
+      }
+
+      const row = data as PaymentJobRow;
+      setPaymentJob(row);
+      setPaymentJobForm(toPaymentJobFormState(row));
+      setPaymentJobSaveMessage("Payment job draft saved successfully.");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while saving the payment job.";
+
+      setPaymentJobSaveError(message);
+    } finally {
+      setIsSavingPaymentJob(false);
+    }
+  }
+
+  const paymentPreview = useMemo(() => {
+    const totalPriceCents = dollarsStringToCents(paymentJobForm.total_price_dollars);
+    const feePercent = percentStringToNumber(paymentJobForm.platform_fee_percent);
+
+    if (Number.isNaN(totalPriceCents) || Number.isNaN(feePercent)) {
+      return {
+        totalPriceCents: 0,
+        platformFeeCents: 0,
+        proPayoutCents: 0,
+      };
+    }
+
+    const platformFeeCents = Math.round(totalPriceCents * (feePercent / 100));
+    const proPayoutCents = Math.max(totalPriceCents - platformFeeCents, 0);
+
+    return {
+      totalPriceCents,
+      platformFeeCents,
+      proPayoutCents,
+    };
+  }, [paymentJobForm.platform_fee_percent, paymentJobForm.total_price_dollars]);
+
   if (!isAuthorized && !accessDenied && !errorMessage) {
     return null;
   }
@@ -446,7 +706,8 @@ export default function AdminQuoteDetailPage() {
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-fh-stone">
             This internal detail page supports homeowner intake review,
-            workflow updates, assignment, and follow-up planning in one place.
+            workflow updates, assignment, follow-up planning, and the first
+            payable job draft in one place.
           </p>
         </div>
       </section>
@@ -818,6 +1079,251 @@ export default function AdminQuoteDetailPage() {
                 {saveError ? (
                   <p className="mt-4 text-sm text-red-600">{saveError}</p>
                 ) : null}
+              </div>
+
+              <div className="rounded-[32px] border border-fh-linen bg-white p-7 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-fh-sand text-fh-copper">
+                    <CreditCard size={22} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold tracking-[0.2em] text-fh-moss uppercase">
+                      Payment job draft
+                    </p>
+                    <h3 className="mt-1 font-[family-name:var(--font-manrope)] text-2xl font-semibold">
+                      Build the payable job
+                    </h3>
+                  </div>
+                </div>
+
+                <p className="mt-4 text-sm leading-7 text-fh-stone">
+                  Quote intake stays free. This section creates the later paid
+                  job draft after admin review and manual pro matching.
+                </p>
+
+                <div className="mt-6 grid gap-4">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-fh-graphite">
+                      Assigned pro request ID
+                    </label>
+                    <input
+                      type="text"
+                      value={paymentJobForm.assigned_pro_request_id}
+                      onChange={(event) =>
+                        setPaymentJobForm((current) => ({
+                          ...current,
+                          assigned_pro_request_id: event.target.value,
+                        }))
+                      }
+                      placeholder="Paste matched pro request ID"
+                      className="w-full rounded-[18px] border border-fh-linen bg-fh-warm-white px-4 py-3 text-sm text-fh-graphite outline-none transition focus:border-fh-copper focus:bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-fh-graphite">
+                      Scope summary
+                    </label>
+                    <textarea
+                      value={paymentJobForm.scope_summary}
+                      onChange={(event) =>
+                        setPaymentJobForm((current) => ({
+                          ...current,
+                          scope_summary: event.target.value,
+                        }))
+                      }
+                      rows={5}
+                      placeholder="Enter approved scope, install details, assumptions, and what the homeowner is paying for."
+                      className="w-full rounded-[18px] border border-fh-linen bg-fh-warm-white px-4 py-3 text-sm text-fh-graphite outline-none transition focus:border-fh-copper focus:bg-white"
+                    />
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-fh-graphite">
+                        Total price (USD)
+                      </label>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={paymentJobForm.total_price_dollars}
+                        onChange={(event) =>
+                          setPaymentJobForm((current) => ({
+                            ...current,
+                            total_price_dollars: event.target.value,
+                          }))
+                        }
+                        placeholder="2500.00"
+                        className="w-full rounded-[18px] border border-fh-linen bg-fh-warm-white px-4 py-3 text-sm text-fh-graphite outline-none transition focus:border-fh-copper focus:bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-fh-graphite">
+                        Platform fee %
+                      </label>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={paymentJobForm.platform_fee_percent}
+                        onChange={(event) =>
+                          setPaymentJobForm((current) => ({
+                            ...current,
+                            platform_fee_percent: event.target.value,
+                          }))
+                        }
+                        placeholder="15.00"
+                        className="w-full rounded-[18px] border border-fh-linen bg-fh-warm-white px-4 py-3 text-sm text-fh-graphite outline-none transition focus:border-fh-copper focus:bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-fh-graphite">
+                      Payment status
+                    </label>
+                    <select
+                      value={paymentJobForm.payment_status}
+                      onChange={(event) =>
+                        setPaymentJobForm((current) => ({
+                          ...current,
+                          payment_status: event.target.value,
+                        }))
+                      }
+                      className="w-full rounded-[18px] border border-fh-linen bg-fh-warm-white px-4 py-3 text-sm text-fh-graphite outline-none transition focus:border-fh-copper"
+                    >
+                      {paymentStatusOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {formatStatusLabel(option)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                  <div className="rounded-[24px] border border-fh-linen bg-fh-warm-white px-5 py-4">
+                    <p className="text-xs font-semibold tracking-[0.18em] text-fh-copper uppercase">
+                      Total price
+                    </p>
+                    <div className="mt-2 flex items-center gap-2 text-sm leading-6 text-fh-stone">
+                      <DollarSign size={16} className="shrink-0 text-fh-moss" />
+                      <span>{formatCurrencyFromCents(paymentPreview.totalPriceCents)}</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[24px] border border-fh-linen bg-fh-warm-white px-5 py-4">
+                    <p className="text-xs font-semibold tracking-[0.18em] text-fh-copper uppercase">
+                      FuseHarbor fee
+                    </p>
+                    <div className="mt-2 flex items-center gap-2 text-sm leading-6 text-fh-stone">
+                      <DollarSign size={16} className="shrink-0 text-fh-moss" />
+                      <span>{formatCurrencyFromCents(paymentPreview.platformFeeCents)}</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[24px] border border-fh-linen bg-fh-warm-white px-5 py-4">
+                    <p className="text-xs font-semibold tracking-[0.18em] text-fh-copper uppercase">
+                      Pro payout
+                    </p>
+                    <div className="mt-2 flex items-center gap-2 text-sm leading-6 text-fh-stone">
+                      <DollarSign size={16} className="shrink-0 text-fh-moss" />
+                      <span>{formatCurrencyFromCents(paymentPreview.proPayoutCents)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleSavePaymentJob}
+                  disabled={isSavingPaymentJob}
+                  className={`mt-6 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition ${
+                    isSavingPaymentJob
+                      ? "cursor-not-allowed bg-fh-stone/35 text-fh-white/85"
+                      : "bg-fh-graphite text-fh-white hover:opacity-95"
+                  }`}
+                >
+                  <Save size={16} />
+                  {isSavingPaymentJob ? "Saving..." : "Save payment job draft"}
+                </button>
+
+                {paymentJobSaveMessage ? (
+                  <p className="mt-4 text-sm text-green-700">
+                    {paymentJobSaveMessage}
+                  </p>
+                ) : null}
+
+                {paymentJobSaveError ? (
+                  <p className="mt-4 text-sm text-red-600">
+                    {paymentJobSaveError}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="rounded-[32px] border border-fh-linen bg-white p-7 shadow-sm">
+                <p className="text-sm font-semibold tracking-[0.2em] text-fh-moss uppercase">
+                  Payment job snapshot
+                </p>
+                <h3 className="mt-2 font-[family-name:var(--font-manrope)] text-2xl font-semibold">
+                  Current payable record
+                </h3>
+
+                <div className="mt-6 grid gap-4">
+                  <div className="rounded-[24px] border border-fh-linen bg-fh-warm-white px-5 py-4">
+                    <p className="text-xs font-semibold tracking-[0.18em] text-fh-copper uppercase">
+                      Job status
+                    </p>
+                    <div className="mt-2">
+                      <span
+                        className={`inline-flex rounded-full px-4 py-2 text-sm font-semibold capitalize ${paymentStatusBadgeClassName(
+                          paymentJob?.payment_status || "draft",
+                        )}`}
+                      >
+                        {formatStatusLabel(paymentJob?.payment_status || "draft")}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[24px] border border-fh-linen bg-fh-warm-white px-5 py-4">
+                    <p className="text-xs font-semibold tracking-[0.18em] text-fh-copper uppercase">
+                      Assigned pro request ID
+                    </p>
+                    <p className="mt-2 break-all text-sm leading-7 text-fh-stone">
+                      {paymentJob?.assigned_pro_request_id?.trim() ||
+                        "No pro linked yet."}
+                    </p>
+                  </div>
+
+                  <div className="rounded-[24px] border border-fh-linen bg-fh-warm-white px-5 py-4">
+                    <p className="text-xs font-semibold tracking-[0.18em] text-fh-copper uppercase">
+                      Total / fee / payout
+                    </p>
+                    <p className="mt-2 text-sm leading-7 text-fh-stone">
+                      {paymentJob
+                        ? `${formatCurrencyFromCents(paymentJob.total_price_cents)} total · ${formatCurrencyFromCents(paymentJob.platform_fee_cents)} FuseHarbor fee · ${formatCurrencyFromCents(paymentJob.pro_payout_cents)} pro payout`
+                        : "No payment job saved yet."}
+                    </p>
+                  </div>
+
+                  <div className="rounded-[24px] border border-fh-linen bg-fh-warm-white px-5 py-4">
+                    <p className="text-xs font-semibold tracking-[0.18em] text-fh-copper uppercase">
+                      Paid at
+                    </p>
+                    <p className="mt-2 text-sm leading-7 text-fh-stone">
+                      {formatDateTime(paymentJob?.paid_at ?? null, "Not paid yet.")}
+                    </p>
+                  </div>
+
+                  <div className="rounded-[24px] border border-fh-linen bg-fh-warm-white px-5 py-4">
+                    <p className="text-xs font-semibold tracking-[0.18em] text-fh-copper uppercase">
+                      Stripe session
+                    </p>
+                    <p className="mt-2 break-all text-sm leading-7 text-fh-stone">
+                      {paymentJob?.stripe_checkout_session_id?.trim() ||
+                        "No Stripe checkout session yet."}
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="rounded-[32px] border border-fh-linen bg-white p-7 shadow-sm">
