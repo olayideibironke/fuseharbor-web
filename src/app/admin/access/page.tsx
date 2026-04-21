@@ -108,7 +108,6 @@ export default function AdminAccessPage() {
         email: trimmedEmail,
         options: {
           shouldCreateUser: false,
-          redirectTo: "https://www.fuseharbor.org/admin/access/callback",
         },
       });
 
