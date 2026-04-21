@@ -9,16 +9,23 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
+import {
+  type EmailOtpType,
+} from "@supabase/supabase-js";
 import { AdminFooter } from "@/components/admin-footer";
 import { AdminHeader } from "@/components/admin-header";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 export default function AdminAccessPage() {
   const hasBootedRef = useRef(false);
 
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCompletingHashLogin, setIsCompletingHashLogin] = useState(false);
+  const [isCompletingLogin, setIsCompletingLogin] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -36,48 +43,134 @@ export default function AdminAccessPage() {
 
     let isMounted = true;
 
-    async function completeHashLoginIfPresent() {
-      try {
-        const hash = window.location.hash || "";
+    async function waitForStableSession() {
+      const supabase = getSupabaseBrowserClient();
 
-        if (!hash.includes("access_token=") || !hash.includes("refresh_token=")) {
-          return;
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (session) {
+          return session;
         }
+
+        await delay(250);
+      }
+
+      return null;
+    }
+
+    async function boot() {
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const currentUrl = new URL(window.location.href);
+        const hashParams = new URLSearchParams(
+          window.location.hash.replace(/^#/, ""),
+        );
+
+        const code = currentUrl.searchParams.get("code");
+        const tokenHash = currentUrl.searchParams.get("token_hash");
+        const type = currentUrl.searchParams.get("type") as EmailOtpType | null;
+
+        const accessToken = hashParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token");
+
+        setErrorMessage("");
+        setSuccessMessage("");
+
+        let authActionRan = false;
+
+        if (code) {
+          authActionRan = true;
+          if (!isMounted) {
+            return;
+          }
+
+          setIsCompletingLogin(true);
+          setSuccessMessage("Completing secure sign-in...");
+
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+          if (error) {
+            throw error;
+          }
+
+          currentUrl.searchParams.delete("code");
+          currentUrl.searchParams.delete("next");
+          window.history.replaceState(
+            {},
+            document.title,
+            currentUrl.pathname + currentUrl.search,
+          );
+        } else if (tokenHash && type) {
+          authActionRan = true;
+          if (!isMounted) {
+            return;
+          }
+
+          setIsCompletingLogin(true);
+          setSuccessMessage("Completing secure sign-in...");
+
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type,
+          });
+
+          if (error) {
+            throw error;
+          }
+
+          currentUrl.searchParams.delete("token_hash");
+          currentUrl.searchParams.delete("type");
+          currentUrl.searchParams.delete("next");
+          window.history.replaceState(
+            {},
+            document.title,
+            currentUrl.pathname + currentUrl.search,
+          );
+        } else if (accessToken && refreshToken) {
+          authActionRan = true;
+          if (!isMounted) {
+            return;
+          }
+
+          setIsCompletingLogin(true);
+          setSuccessMessage("Completing secure sign-in...");
+
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+
+          if (error) {
+            throw error;
+          }
+
+          window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname + window.location.search,
+          );
+        }
+
+        const session = await waitForStableSession();
 
         if (!isMounted) {
           return;
         }
 
-        setIsCompletingHashLogin(true);
-        setErrorMessage("");
-        setSuccessMessage("Completing secure sign-in...");
-
-        const hashParams = new URLSearchParams(hash.replace(/^#/, ""));
-        const accessToken = hashParams.get("access_token");
-        const refreshToken = hashParams.get("refresh_token");
-
-        if (!accessToken || !refreshToken) {
-          throw new Error("Magic link tokens were missing from the URL.");
+        if (session) {
+          setSuccessMessage("Admin session found. Opening workspace...");
+          window.location.replace("/admin");
+          return;
         }
 
-        const supabase = getSupabaseBrowserClient();
-
-        const { error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        });
-
-        if (error) {
-          throw error;
+        if (authActionRan) {
+          throw new Error(
+            "Sign-in completed but no admin session was found. Please try the newest magic link once.",
+          );
         }
-
-        window.history.replaceState(
-          {},
-          document.title,
-          window.location.pathname + window.location.search,
-        );
-
-        window.location.href = "/admin";
       } catch (error) {
         if (!isMounted) {
           return;
@@ -86,15 +179,18 @@ export default function AdminAccessPage() {
         const message =
           error instanceof Error
             ? error.message
-            : "Something went wrong while completing admin sign-in.";
+            : "Something went wrong while preparing admin access.";
 
         setErrorMessage(message);
         setSuccessMessage("");
-        setIsCompletingHashLogin(false);
+      } finally {
+        if (isMounted) {
+          setIsCompletingLogin(false);
+        }
       }
     }
 
-    completeHashLoginIfPresent();
+    boot();
 
     return () => {
       isMounted = false;
@@ -280,19 +376,19 @@ export default function AdminAccessPage() {
             <button
               type="button"
               onClick={handleMagicLink}
-              disabled={!emailLooksValid || isSubmitting || isCompletingHashLogin}
+              disabled={!emailLooksValid || isSubmitting || isCompletingLogin}
               className={`mt-6 inline-flex items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-semibold transition ${
-                emailLooksValid && !isSubmitting && !isCompletingHashLogin
+                emailLooksValid && !isSubmitting && !isCompletingLogin
                   ? "bg-fh-graphite text-fh-white hover:opacity-95"
                   : "cursor-not-allowed bg-fh-stone/35 text-fh-white/85"
               }`}
             >
-              {isCompletingHashLogin
+              {isCompletingLogin
                 ? "Completing sign-in..."
                 : isSubmitting
                   ? "Sending link..."
                   : "Send Magic Link"}
-              {!isSubmitting && !isCompletingHashLogin ? (
+              {!isSubmitting && !isCompletingLogin ? (
                 <ArrowRight size={16} />
               ) : null}
             </button>
