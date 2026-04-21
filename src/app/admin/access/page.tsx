@@ -9,50 +9,16 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
-import { type EmailOtpType, type Session } from "@supabase/supabase-js";
 import { AdminFooter } from "@/components/admin-footer";
 import { AdminHeader } from "@/components/admin-header";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
-
-const ADMIN_REDIRECT_PATH = "/admin";
-const SESSION_WAIT_TIMEOUT_MS = 8000;
-const SESSION_POLL_INTERVAL_MS = 250;
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function isEmailOtpType(value: string | null): value is EmailOtpType {
-  return [
-    "signup",
-    "invite",
-    "magiclink",
-    "recovery",
-    "email_change",
-    "email",
-    "email_change_new",
-    "email_change_current",
-  ].includes(value ?? "");
-}
-
-function stripAuthParamsFromUrl() {
-  const currentUrl = new URL(window.location.href);
-
-  currentUrl.searchParams.delete("code");
-  currentUrl.searchParams.delete("token_hash");
-  currentUrl.searchParams.delete("type");
-  currentUrl.searchParams.delete("next");
-
-  const nextUrl = currentUrl.pathname + currentUrl.search;
-  window.history.replaceState({}, document.title, nextUrl);
-}
 
 export default function AdminAccessPage() {
   const hasBootedRef = useRef(false);
 
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCompletingLogin, setIsCompletingLogin] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -70,146 +36,25 @@ export default function AdminAccessPage() {
 
     let isMounted = true;
 
-    async function waitForStableSession() {
-      const supabase = getSupabaseBrowserClient();
-
-      const {
-        data: { session: immediateSession },
-      } = await supabase.auth.getSession();
-
-      if (immediateSession) {
-        return immediateSession;
-      }
-
-      return await new Promise<Session | null>((resolve) => {
-        let settled = false;
-
-        const finish = (session: Session | null) => {
-          if (settled) {
-            return;
-          }
-
-          settled = true;
-          clearInterval(intervalId);
-          clearTimeout(timeoutId);
-          subscription.unsubscribe();
-          resolve(session);
-        };
-
-        const {
-          data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, session) => {
-          if (session) {
-            finish(session);
-          }
-        });
-
-        const intervalId = window.setInterval(async () => {
-          const {
-            data: { session },
-          } = await supabase.auth.getSession();
-
-          if (session) {
-            finish(session);
-          }
-        }, SESSION_POLL_INTERVAL_MS);
-
-        const timeoutId = window.setTimeout(() => {
-          finish(null);
-        }, SESSION_WAIT_TIMEOUT_MS);
-      });
-    }
-
     async function boot() {
       try {
         const supabase = getSupabaseBrowserClient();
-        const currentUrl = new URL(window.location.href);
-        const hashParams = new URLSearchParams(
-          window.location.hash.replace(/^#/, ""),
-        );
 
-        const code = currentUrl.searchParams.get("code");
-        const tokenHash = currentUrl.searchParams.get("token_hash");
-        const rawType = currentUrl.searchParams.get("type");
-        const accessToken = hashParams.get("access_token");
-        const refreshToken = hashParams.get("refresh_token");
-
-        const hasCodeFlow = Boolean(code);
-        const hasOtpFlow = Boolean(tokenHash && isEmailOtpType(rawType));
-        const hasHashSessionFlow = Boolean(accessToken && refreshToken);
-        const hasAuthPayload = hasCodeFlow || hasOtpFlow || hasHashSessionFlow;
-
-        setErrorMessage("");
-        setSuccessMessage("");
-
-        if (hasAuthPayload) {
-          if (!isMounted) {
-            return;
-          }
-
-          setIsCompletingLogin(true);
-          setSuccessMessage("Completing secure sign-in...");
-
-          stripAuthParamsFromUrl();
-
-          if (hasCodeFlow && code) {
-            const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-            if (error) {
-              throw error;
-            }
-          } else if (hasOtpFlow && tokenHash && isEmailOtpType(rawType)) {
-            const { error } = await supabase.auth.verifyOtp({
-              token_hash: tokenHash,
-              type: rawType,
-            });
-
-            if (error) {
-              throw error;
-            }
-          } else if (hasHashSessionFlow && accessToken && refreshToken) {
-            const { error } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken,
-            });
-
-            if (error) {
-              throw error;
-            }
-          }
-
-          const session = await waitForStableSession();
-
-          if (!isMounted) {
-            return;
-          }
-
-          if (session) {
-            setSuccessMessage("Admin session found. Opening workspace...");
-            window.location.replace(ADMIN_REDIRECT_PATH);
-            return;
-          }
-
-          throw new Error(
-            "Sign-in returned successfully, but no admin session became active. Please use the newest magic link once.",
-          );
-        }
-
-        const session = await waitForStableSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
         if (!isMounted) {
           return;
         }
 
         if (session) {
-          setIsCompletingLogin(true);
           setSuccessMessage("Admin session found. Opening workspace...");
-          window.location.replace(ADMIN_REDIRECT_PATH);
+          window.location.replace("/admin");
           return;
         }
 
-        setIsCompletingLogin(false);
-        setSuccessMessage("");
+        setIsCheckingSession(false);
       } catch (error) {
         if (!isMounted) {
           return;
@@ -222,7 +67,7 @@ export default function AdminAccessPage() {
 
         setErrorMessage(message);
         setSuccessMessage("");
-        setIsCompletingLogin(false);
+        setIsCheckingSession(false);
       }
     }
 
@@ -250,7 +95,7 @@ export default function AdminAccessPage() {
       const { error } = await supabase.auth.signInWithOtp({
         email: trimmedEmail,
         options: {
-          emailRedirectTo: `${window.location.origin}/admin/access`,
+          emailRedirectTo: `${window.location.origin}/admin/access/callback`,
         },
       });
 
@@ -412,19 +257,19 @@ export default function AdminAccessPage() {
             <button
               type="button"
               onClick={handleMagicLink}
-              disabled={!emailLooksValid || isSubmitting || isCompletingLogin}
+              disabled={!emailLooksValid || isSubmitting || isCheckingSession}
               className={`mt-6 inline-flex items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-semibold transition ${
-                emailLooksValid && !isSubmitting && !isCompletingLogin
+                emailLooksValid && !isSubmitting && !isCheckingSession
                   ? "bg-fh-graphite text-fh-white hover:opacity-95"
                   : "cursor-not-allowed bg-fh-stone/35 text-fh-white/85"
               }`}
             >
-              {isCompletingLogin
-                ? "Completing sign-in..."
+              {isCheckingSession
+                ? "Checking access..."
                 : isSubmitting
                   ? "Sending link..."
                   : "Send Magic Link"}
-              {!isSubmitting && !isCompletingLogin ? (
+              {!isSubmitting && !isCheckingSession ? (
                 <ArrowRight size={16} />
               ) : null}
             </button>
