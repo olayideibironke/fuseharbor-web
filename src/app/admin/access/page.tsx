@@ -15,7 +15,7 @@ import { AdminHeader } from "@/components/admin-header";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 function normalizeOtp(value: string) {
-  return value.replace(/\D/g, "").slice(0, 6);
+  return value.replace(/\D/g, "").slice(0, 8);
 }
 
 export default function AdminAccessPage() {
@@ -36,7 +36,7 @@ export default function AdminAccessPage() {
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
 
   const normalizedOtpCode = normalizeOtp(otpCode);
-  const otpLooksComplete = normalizedOtpCode.length === 6;
+  const otpLooksComplete = normalizedOtpCode.length === 8;
   const isOtpStep = codeSentToEmail.length > 0;
 
   useEffect(() => {
@@ -143,7 +143,7 @@ export default function AdminAccessPage() {
     }
 
     if (!otpLooksComplete) {
-      setErrorMessage("Enter the 6-digit code from your email.");
+      setErrorMessage("Enter the full 8-digit code from your email.");
       return;
     }
 
@@ -259,8 +259,7 @@ export default function AdminAccessPage() {
                         One-time code sign-in
                       </p>
                       <p className="mt-1 text-sm leading-6 text-fh-stone">
-                        A short one-time code is safer here than a clickable
-                        magic link and keeps admin access more predictable.
+                        A one-time code is used for secure admin access.
                       </p>
                     </div>
                   </div>
@@ -292,11 +291,13 @@ export default function AdminAccessPage() {
               Secure sign-in
             </p>
             <h2 className="mt-2 font-[family-name:var(--font-manrope)] text-3xl font-semibold">
-              {isOtpStep ? "Enter your one-time admin code" : "Request your admin code"}
+              {isOtpStep
+                ? "Enter your one-time admin code"
+                : "Request your admin code"}
             </h2>
             <p className="mt-4 max-w-2xl text-base leading-7 text-fh-stone">
               {isOtpStep
-                ? `We sent a code to ${codeSentToEmail}. Enter the newest 6-digit code from your email.`
+                ? `We sent a code to ${codeSentToEmail}. Enter the newest 8-digit code from your email.`
                 : "Enter the email address approved for FuseHarbor admin access."}
             </p>
 
@@ -337,7 +338,7 @@ export default function AdminAccessPage() {
                     setErrorMessage("");
                     setSuccessMessage("");
                   }}
-                  placeholder="Enter 6-digit code"
+                  placeholder="Enter 8-digit code"
                   className={`w-full rounded-[20px] border px-4 py-4 text-sm tracking-[0.3em] text-fh-graphite outline-none transition placeholder:tracking-normal placeholder:text-fh-stone/80 ${
                     errorMessage
                       ? "border-red-500 bg-white"
