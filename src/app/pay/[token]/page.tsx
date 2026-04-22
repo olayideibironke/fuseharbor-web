@@ -46,6 +46,8 @@ function formatStatusLabel(status: string) {
 
 function statusBadgeClassName(status: string) {
   switch (status) {
+    case "draft":
+      return "bg-fh-sand text-fh-copper";
     case "awaiting_homeowner_approval":
       return "bg-amber-100 text-amber-700";
     case "awaiting_payment":
@@ -281,8 +283,15 @@ export default function PublicPaymentPage() {
     );
   }
 
-  const canPayNow = paymentJob.payment_status === "awaiting_payment";
-  const isPaid = paymentJob.payment_status === "paid";
+  const normalizedPaymentStatus = (paymentJob.payment_status || "")
+    .trim()
+    .toLowerCase();
+
+  const canPayNow =
+    normalizedPaymentStatus === "draft" ||
+    normalizedPaymentStatus === "awaiting_payment";
+
+  const isPaid = normalizedPaymentStatus === "paid";
 
   return (
     <main className="min-h-screen bg-fh-warm-white text-fh-graphite">
@@ -306,11 +315,11 @@ export default function PublicPaymentPage() {
           <div className="mt-8 flex flex-wrap gap-3">
             <div
               className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold shadow-sm ${statusBadgeClassName(
-                paymentJob.payment_status,
+                normalizedPaymentStatus,
               )}`}
             >
               <CheckCircle2 size={16} />
-              {formatStatusLabel(paymentJob.payment_status)}
+              {formatStatusLabel(normalizedPaymentStatus)}
             </div>
 
             <div className="inline-flex items-center gap-2 rounded-full border border-fh-linen bg-fh-white px-4 py-2 text-sm font-semibold text-fh-graphite shadow-sm">
@@ -385,7 +394,7 @@ export default function PublicPaymentPage() {
                   Payment status
                 </p>
                 <p className="mt-2 text-sm leading-7 text-fh-stone">
-                  {formatStatusLabel(paymentJob.payment_status)}
+                  {formatStatusLabel(normalizedPaymentStatus)}
                 </p>
               </div>
 
