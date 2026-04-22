@@ -37,6 +37,10 @@ function getPublicSupabaseServer() {
   return createClient(supabaseUrl, supabaseAnonKey);
 }
 
+function normalizePaymentStatus(status: string | null | undefined) {
+  return (status ?? "").trim().toLowerCase();
+}
+
 export async function POST(request: NextRequest) {
   try {
     const stripe = getStripeServer();
@@ -93,7 +97,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (paymentJob.payment_status !== "awaiting_payment") {
+    const normalizedPaymentStatus = normalizePaymentStatus(
+      paymentJob.payment_status,
+    );
+
+    const isCheckoutEligible =
+      normalizedPaymentStatus === "draft" ||
+      normalizedPaymentStatus === "awaiting_payment";
+
+    if (!isCheckoutEligible) {
       return NextResponse.json(
         {
           ok: false,
