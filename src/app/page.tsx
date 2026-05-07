@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -61,20 +62,57 @@ const projectGoalOptions = [
 
 const reassuranceCards = [
   {
-    title: "A guided first step",
+    title: "Built for a focused Maryland pilot",
     description:
-      "FuseHarbor is designed to make homeowner intake feel cleaner and less overwhelming than generic contractor forms.",
+      "FuseHarbor is starting carefully with a Maryland-first rollout, giving the marketplace room to grow with quality, trust, and real homeowner demand.",
   },
   {
-    title: "Trust-first project review",
+    title: "Cleaner homeowner intake",
     description:
-      "Your details are organized into a clearer internal workflow so the project can be reviewed more thoughtfully.",
+      "Instead of sending homeowners into a generic form, FuseHarbor organizes project details so EV charger, panel, heat pump, and backup power requests can be reviewed more clearly.",
   },
   {
-    title: "Premium homeowner experience",
+    title: "Local pro network forming",
     description:
-      "The goal is to help serious homeowners feel supported, informed, and confident before moving forward.",
+      "The platform is being shaped to support qualified local professionals with better project context and a more serious homeowner pipeline.",
   },
+];
+
+const pilotFocusCards = [
+  {
+    title: "Why FuseHarbor exists",
+    description:
+      "Home electrification projects can feel fragmented, confusing, and difficult to start. FuseHarbor gives homeowners a calmer first step before moving into contractor conversations.",
+    icon: Home,
+  },
+  {
+    title: "What the pilot is proving",
+    description:
+      "The Maryland pilot is focused on validating homeowner demand, improving quote intake, onboarding trusted professionals, and building a repeatable service workflow.",
+    icon: ShieldCheck,
+  },
+  {
+    title: "What growth support unlocks",
+    description:
+      "Funding and business support would help expand homeowner outreach, improve platform operations, support pro onboarding, and strengthen the customer experience.",
+    icon: ArrowRight,
+  },
+];
+
+const growthPriorities = [
+  "Maryland homeowner outreach",
+  "Qualified pro onboarding",
+  "Quote workflow improvements",
+  "Customer support operations",
+  "CRM and email automation",
+  "Trust, compliance, and business infrastructure",
+];
+
+const businessModelPoints = [
+  "Homeowners submit structured project requests",
+  "FuseHarbor organizes project details for review",
+  "Qualified local pros can be matched as the network matures",
+  "The platform grows through cleaner marketplace operations",
 ];
 
 const inputBaseClassName =
@@ -125,7 +163,7 @@ type QuoteRequestApiResponse =
       error: string;
     };
 
-export default function GetAQuotePage() {
+export default function HomePage() {
   const router = useRouter();
 
   const [selectedProjectType, setSelectedProjectType] = useState<string>(
@@ -333,47 +371,66 @@ export default function GetAQuotePage() {
 
         <div className="mx-auto max-w-7xl px-6 pb-10 pt-6 lg:px-8 lg:pb-12">
           <p className="text-sm font-semibold tracking-[0.2em] text-fh-copper uppercase">
-            Get a quote
+            Maryland-first electrification pilot
           </p>
 
           <div className="mt-4 grid gap-8 xl:grid-cols-[1.02fr_0.98fr]">
             <div>
               <h1 className="max-w-4xl font-[family-name:var(--font-manrope)] text-5xl font-semibold tracking-[-0.04em] sm:text-6xl">
-                Start your electrification project with more clarity and trust
+                A cleaner first step for modern home electrification projects
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-fh-stone">
-                FuseHarbor is designed to make the first homeowner step feel
-                cleaner, calmer, and more premium than a generic contractor
-                request form.
+                FuseHarbor is an early-stage Maryland marketplace built to help
+                homeowners start EV charger, panel upgrade, heat pump, and
+                backup power projects with more clarity, structure, and trust.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
                 <div className="inline-flex items-center gap-2 rounded-full border border-fh-linen bg-fh-white px-4 py-2 text-sm font-semibold text-fh-graphite shadow-sm">
-                  <ShieldCheck size={16} className="text-fh-copper" />
-                  Structured intake
+                  <MapPin size={16} className="text-fh-copper" />
+                  Maryland-first pilot
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-fh-linen bg-fh-white px-4 py-2 text-sm font-semibold text-fh-graphite shadow-sm">
-                  <CheckCircle2 size={16} className="text-fh-copper" />
-                  Premium homeowner flow
+                  <ShieldCheck size={16} className="text-fh-copper" />
+                  Trust-led intake
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-fh-linen bg-fh-white px-4 py-2 text-sm font-semibold text-fh-graphite shadow-sm">
                   <Zap size={16} className="text-fh-copper" />
-                  Electrification-focused
+                  Clean home upgrades
                 </div>
+              </div>
+
+              <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+                <Link
+                  href="#quote-form"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-fh-graphite px-6 py-4 text-sm font-semibold text-fh-white transition hover:opacity-95"
+                >
+                  Start a quote request
+                  <ArrowRight size={18} />
+                </Link>
+
+                <Link
+                  href="/for-pros"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-fh-linen bg-fh-white px-6 py-4 text-sm font-semibold text-fh-graphite transition hover:border-fh-copper hover:text-fh-copper"
+                >
+                  Join the pro network
+                  <ArrowRight size={18} />
+                </Link>
               </div>
             </div>
 
             <div className="rounded-[36px] border border-fh-sand bg-[linear-gradient(135deg,_#f2ebe1_0%,_#e7d9c8_100%)] p-8 shadow-sm lg:p-10">
               <p className="text-sm font-semibold tracking-[0.2em] text-fh-copper uppercase">
-                What to expect
+                What FuseHarbor is building
               </p>
               <h2 className="mt-3 font-[family-name:var(--font-manrope)] text-3xl font-semibold text-fh-graphite">
-                A better first step for serious home upgrades
+                A more organized path from homeowner interest to qualified pro
+                review
               </h2>
               <p className="mt-4 text-base leading-7 text-fh-stone">
-                FuseHarbor is being built to make homeowner intake feel more
-                thoughtful from the beginning, especially for EV charging,
-                panels, heat pumps, and backup power projects.
+                FuseHarbor is being built to reduce the confusion around
+                electrification projects by improving how homeowner needs are
+                captured, reviewed, and prepared for local professional support.
               </p>
 
               <div className="mt-8 grid gap-4">
@@ -404,6 +461,69 @@ export default function GetAQuotePage() {
         </div>
       </section>
 
+      <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
+        <div className="grid gap-5 lg:grid-cols-3">
+          {pilotFocusCards.map((card) => {
+            const Icon = card.icon;
+
+            return (
+              <div
+                key={card.title}
+                className="rounded-[32px] border border-fh-linen bg-fh-white p-7 shadow-sm"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-fh-sand text-fh-copper">
+                  <Icon size={22} />
+                </div>
+                <h2 className="mt-6 font-[family-name:var(--font-manrope)] text-2xl font-semibold text-fh-graphite">
+                  {card.title}
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-fh-stone">
+                  {card.description}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-6 py-6 lg:px-8">
+        <div className="rounded-[36px] border border-fh-linen bg-fh-white p-8 shadow-sm lg:p-10">
+          <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+            <div>
+              <p className="text-sm font-semibold tracking-[0.2em] text-fh-copper uppercase">
+                Practical marketplace model
+              </p>
+              <h2 className="mt-4 font-[family-name:var(--font-manrope)] text-3xl font-semibold tracking-[-0.03em] text-fh-graphite sm:text-4xl">
+                Clear enough for homeowners, serious enough for funding review
+              </h2>
+              <p className="mt-4 text-base leading-8 text-fh-stone">
+                FuseHarbor is positioned as a focused startup pilot, not a fake
+                national directory. The first goal is to prove demand, build
+                local professional coverage, and turn clean home upgrade intake
+                into a repeatable marketplace workflow.
+              </p>
+            </div>
+
+            <div className="grid gap-3">
+              {businessModelPoints.map((point) => (
+                <div
+                  key={point}
+                  className="flex items-start gap-3 rounded-[22px] border border-fh-linen bg-fh-warm-white px-5 py-4"
+                >
+                  <CheckCircle2
+                    size={18}
+                    className="mt-0.5 shrink-0 text-fh-copper"
+                  />
+                  <p className="text-sm font-semibold leading-6 text-fh-graphite">
+                    {point}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="quote-form" className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
         <form
           noValidate
@@ -427,8 +547,8 @@ export default function GetAQuotePage() {
               </div>
 
               <p className="mt-4 max-w-2xl text-base leading-7 text-fh-stone">
-                Choose the service that best matches what you are planning for
-                your home.
+                Choose the clean home upgrade that best matches what you are
+                planning for your property.
               </p>
 
               <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -763,8 +883,8 @@ export default function GetAQuotePage() {
                 {selectedProject?.title || "A premium intake experience"}
               </h2>
               <p className="mt-4 text-base leading-7 text-fh-stone">
-                The summary updates live as the homeowner fills out the quote
-                request.
+                The summary updates live as your quote request is completed, so
+                your project details stay organized before submission.
               </p>
 
               <div className="mt-8 grid gap-4">
@@ -792,7 +912,7 @@ export default function GetAQuotePage() {
                 </h3>
                 <p className="mt-3 text-sm leading-7 text-fh-stone">
                   Complete the required fields and submit your homeowner quote
-                  request.
+                  request for review.
                 </p>
 
                 <button
@@ -826,9 +946,47 @@ export default function GetAQuotePage() {
       </section>
 
       <section className="mx-auto max-w-7xl px-6 py-6 lg:px-8">
+        <div className="rounded-[36px] border border-fh-linen bg-fh-white p-8 shadow-sm lg:p-10">
+          <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+            <div>
+              <p className="text-sm font-semibold tracking-[0.2em] text-fh-copper uppercase">
+                Pilot growth priorities
+              </p>
+              <h2 className="mt-4 font-[family-name:var(--font-manrope)] text-3xl font-semibold tracking-[-0.03em] text-fh-graphite sm:text-4xl">
+                Built to grow carefully, not loudly
+              </h2>
+              <p className="mt-4 text-base leading-8 text-fh-stone">
+                FuseHarbor is focused on proving a practical Maryland-first
+                model before expanding wider: real homeowner demand, serious
+                professional participation, and a smoother quote experience for
+                clean home upgrades.
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              {growthPriorities.map((priority) => (
+                <div
+                  key={priority}
+                  className="flex items-start gap-3 rounded-[22px] border border-fh-linen bg-fh-warm-white px-5 py-4"
+                >
+                  <CheckCircle2
+                    size={18}
+                    className="mt-0.5 shrink-0 text-fh-copper"
+                  />
+                  <p className="text-sm font-semibold leading-6 text-fh-graphite">
+                    {priority}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-6 py-6 lg:px-8">
         <PublicLaunchNote
-          title="Maryland-first quote intake, premium rollout"
-          description="FuseHarbor is being launched carefully with a trust-led, quality-first approach. The homeowner quote flow is designed to feel clearer, calmer, and more premium while the marketplace continues becoming more polished and launch-ready."
+          title="Maryland-first quote intake, trust-led rollout"
+          description="FuseHarbor is being launched carefully as an early-stage home electrification marketplace. The quote flow is designed to make the first homeowner step clearer while the pro network, support process, and platform operations continue to mature."
         />
       </section>
 

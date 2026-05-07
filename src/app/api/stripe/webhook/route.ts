@@ -1,130 +1,53 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { getStripeServer } from "@/lib/stripe";
+import { createClient } from '@/lib/supabase/server'
+import { stripe } from '@/lib/stripe/stripe'
+import { headers } from 'next/headers'
+import { NextResponse } from 'next/server'
 
-type PaymentJobUpdateRow = {
-  id: string;
-  payment_status: string;
-};
+export async function POST(request: Request) {
+  const body = await request.text()
+  const signature = (await headers()).get('stripe-signature') as string
+  
+  console.log('Webhook secret first 10 chars:', process.env.STRIPE_WEBHOOK_SECRET?.substring(0, 10))
+  console.log('Signature:', signature?.substring(0, 50))
 
-function getSupabaseServiceClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  let event
 
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error(
-      "Missing Supabase server environment variables. Check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.",
-    );
+  try {
+    event = stripe.webhooks.constructEvent(
+      body,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET!
+    )
+  } catch (error) {
+    console.error('Webhook signature verification failed:', error)
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
-}
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object
+    const { assessmentId } = session.metadata || {}
 
-export async function POST(request: NextRequest) {
-  try {
-    const stripe = getStripeServer();
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    console.log('Checkout session completed:', session.id)
+    console.log('Assessment ID from metadata:', assessmentId)
 
-    if (!webhookSecret) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "Missing STRIPE_WEBHOOK_SECRET environment variable.",
-        },
-        { status: 500 },
-      );
-    }
+    if (assessmentId) {
+      const supabase = await createClient()
 
-    const signature = request.headers.get("stripe-signature");
-
-    if (!signature) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "Missing Stripe signature header.",
-        },
-        { status: 400 },
-      );
-    }
-
-    const rawBody = await request.text();
-
-    const event = stripe.webhooks.constructEvent(
-      rawBody,
-      signature,
-      webhookSecret,
-    );
-
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object;
-
-      const paymentJobId =
-        typeof session.metadata?.paymentJobId === "string"
-          ? session.metadata.paymentJobId
-          : "";
-
-      if (!paymentJobId) {
-        return NextResponse.json(
-          {
-            ok: false,
-            error: "Missing payment job metadata on completed checkout session.",
-          },
-          { status: 400 },
-        );
-      }
-
-      const supabase = getSupabaseServiceClient();
-
-      const updatePayload = {
-        payment_status: "paid",
-        stripe_checkout_session_id: session.id,
-        stripe_payment_intent_id:
-          typeof session.payment_intent === "string"
-            ? session.payment_intent
-            : null,
-        paid_at: new Date().toISOString(),
-      };
-
-      const { data, error } = await supabase
-        .from("payment_jobs")
-        .update(updatePayload)
-        .eq("id", paymentJobId)
-        .select("id,payment_status")
-        .maybeSingle();
+      const { error } = await supabase
+        .from('assessments')
+        .update({ fee_paid: true })
+        .eq('id', assessmentId)
 
       if (error) {
-        throw error;
+        console.error('Failed to update assessment:', error)
+        return NextResponse.json({ error: 'Failed to update assessment' }, { status: 500 })
       }
 
-      const updatedRow = data as PaymentJobUpdateRow | null;
-
-      if (!updatedRow) {
-        return NextResponse.json(
-          {
-            ok: false,
-            error: "Payment job was not found for webhook update.",
-          },
-          { status: 404 },
-        );
-      }
+      console.log(`✅ Assessment ${assessmentId} marked as paid`)
+    } else {
+      console.log('No assessmentId in session metadata')
     }
-
-    return NextResponse.json({ ok: true }, { status: 200 });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Stripe webhook failed.";
-
-    return NextResponse.json(
-      {
-        ok: false,
-        error: message,
-      },
-      { status: 400 },
-    );
   }
+
+  return NextResponse.json({ received: true })
 }

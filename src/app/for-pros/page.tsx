@@ -8,11 +8,10 @@ import {
   BriefcaseBusiness,
   CheckCircle2,
   ChevronRight,
+  ClipboardCheck,
   Mail,
   MapPin,
   ShieldCheck,
-  Sparkles,
-  Star,
   User,
   Users,
   Zap,
@@ -24,46 +23,58 @@ import { SiteHeader } from "@/components/site-header";
 const MIN_SUBMIT_TIME_MS = 1500;
 
 const heroPoints = [
-  "Premium homeowner audience",
-  "Electrification-focused lead flow",
-  "Cleaner brand presentation",
-  "Built for vetted professionals",
+  "Maryland-first pro network",
+  "Electrification-focused project demand",
+  "Cleaner homeowner intake",
+  "Quality-first marketplace rollout",
 ];
 
-const proofCards = [
+const networkCards = [
   {
-    title: "Premium positioning",
+    title: "A focused pro network",
     description:
-      "FuseHarbor is being shaped to feel more polished, more trusted, and more serious than generic contractor directories.",
+      "FuseHarbor is not trying to become a crowded general contractor directory. The early network is being shaped around clean home upgrade professionals.",
+    icon: Users,
   },
   {
-    title: "Electrification focus",
+    title: "Better project context",
     description:
-      "The platform is centered on modern home electrification work, not a noisy marketplace trying to cover everything.",
+      "Homeowner requests are structured around project type, property details, timing, and goals so early review can happen with more useful information.",
+    icon: ClipboardCheck,
   },
   {
-    title: "Quality-first intake",
+    title: "Built for trust",
     description:
-      "Homeowner and pro flows are being built with structure, clarity, and trust so the marketplace feels high-caliber on both sides.",
+      "The marketplace is being developed carefully so homeowner experience, professional participation, and operational quality can mature together.",
+    icon: ShieldCheck,
   },
 ];
 
 const processSteps = [
   {
-    title: "Raise your hand early",
+    title: "Submit early interest",
     description:
-      "Submit your company details so FuseHarbor can organize early professional interest before serious rollout begins.",
+      "Share your company details, trade category, and service area so FuseHarbor can track early professional demand.",
   },
   {
-    title: "Internal review and fit",
+    title: "Fit and coverage review",
     description:
-      "Your trade category, service area, and positioning help shape how the pro side of the marketplace develops.",
+      "FuseHarbor uses submitted details to understand which trades and Maryland service areas are forming the strongest early network.",
   },
   {
     title: "Future follow-up",
     description:
-      "As FuseHarbor becomes more polished and launch-ready, your submitted details make future review and outreach possible.",
+      "As the marketplace pilot matures, submitted professionals may be contacted for onboarding review, service fit, and launch-readiness conversations.",
   },
+];
+
+const fundingReadyPoints = [
+  "Supports a cleaner local contractor pipeline",
+  "Focuses on EV chargers, panels, heat pumps, and backup power",
+  "Creates a more organized homeowner-to-pro workflow",
+  "Helps validate Maryland homeowner demand before wider expansion",
+  "Builds toward a practical, revenue-capable marketplace model",
+  "Keeps early growth honest, measured, and quality-led",
 ];
 
 const tradeOptions = [
@@ -294,20 +305,18 @@ export default function ForProsPage() {
 
         <div className="mx-auto max-w-7xl px-6 pb-16 pt-6 lg:px-8 lg:pb-20">
           <p className="text-sm font-semibold tracking-[0.2em] text-fh-copper uppercase">
-            For pros
+            Maryland pro network forming
           </p>
 
           <div className="mt-4 grid gap-8 xl:grid-cols-[1.05fr_0.95fr]">
             <div>
               <h1 className="max-w-4xl font-[family-name:var(--font-manrope)] text-5xl font-semibold tracking-[-0.04em] sm:text-6xl">
-                Join a premium electrification marketplace taking shape the right
-                way
+                Help shape a cleaner marketplace for home electrification work
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-fh-stone">
-                FuseHarbor is being built for serious home electrification
-                professionals who want stronger homeowner fit, cleaner brand
-                presentation, and a marketplace that feels more trusted from the
-                first interaction.
+                FuseHarbor is building a Maryland-first network for qualified
+                professionals serving EV charger installation, panel upgrades,
+                heat pump solutions, battery storage, and backup power projects.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
@@ -327,7 +336,7 @@ export default function ForProsPage() {
                   href="/get-a-quote"
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-fh-graphite px-6 py-4 text-sm font-semibold text-fh-white transition hover:opacity-95"
                 >
-                  Explore the platform
+                  View homeowner flow
                   <ArrowRight size={18} />
                 </Link>
 
@@ -343,15 +352,16 @@ export default function ForProsPage() {
 
             <div className="rounded-[36px] border border-fh-sand bg-[linear-gradient(135deg,_#f2ebe1_0%,_#e7d9c8_100%)] p-8 shadow-sm lg:p-10">
               <p className="text-sm font-semibold tracking-[0.2em] text-fh-copper uppercase">
-                Early network
+                Early-stage rollout
               </p>
               <h2 className="mt-3 font-[family-name:var(--font-manrope)] text-3xl font-semibold text-fh-graphite">
-                FuseHarbor is building with select quality in mind
+                Built carefully before scaling widely
               </h2>
               <p className="mt-4 text-base leading-7 text-fh-stone">
-                This is not a mass-market rush. The goal is to shape a cleaner,
-                more premium marketplace experience before serious pro outreach
-                begins.
+                FuseHarbor is not presenting itself as a finished national
+                contractor directory. The goal is to validate a practical local
+                model, improve homeowner intake, and grow a serious professional
+                network step by step.
               </p>
 
               <div className="mt-8 grid gap-4">
@@ -366,8 +376,8 @@ export default function ForProsPage() {
                         Quality-first positioning
                       </p>
                       <p className="mt-1 text-sm leading-6 text-fh-stone">
-                        FuseHarbor is being shaped to feel more selective,
-                        trusted, and polished than generic directories.
+                        The platform is being shaped around trust, project fit,
+                        and a better experience for both homeowners and pros.
                       </p>
                     </div>
                   </div>
@@ -381,11 +391,11 @@ export default function ForProsPage() {
                     />
                     <div>
                       <p className="text-sm font-semibold text-fh-graphite">
-                        Electrification-specific demand
+                        Electrification-specific focus
                       </p>
                       <p className="mt-1 text-sm leading-6 text-fh-stone">
-                        The marketplace is focused on modern electrification
-                        work, not scattered general-service lead noise.
+                        FuseHarbor is focused on modern home upgrade categories,
+                        not scattered general-service lead noise.
                       </p>
                     </div>
                   </div>
@@ -399,11 +409,11 @@ export default function ForProsPage() {
                     />
                     <div>
                       <p className="text-sm font-semibold text-fh-graphite">
-                        Early pro-side visibility
+                        Local pro demand signal
                       </p>
                       <p className="mt-1 text-sm leading-6 text-fh-stone">
-                        Raising your hand early helps FuseHarbor understand who
-                        wants to be part of the network as it matures.
+                        Early submissions help FuseHarbor understand contractor
+                        interest, service coverage, and launch-readiness needs.
                       </p>
                     </div>
                   </div>
@@ -414,14 +424,39 @@ export default function ForProsPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
-        <PublicLaunchNote
-          title="Early pro interest, premium rollout"
-          description="FuseHarbor is collecting professional interest while the marketplace keeps becoming more polished, more trusted, and more launch-ready. The goal is to build a cleaner pro-side experience before serious outreach begins."
-        />
+      <section className="mx-auto max-w-7xl px-6 py-14 lg:px-8">
+        <div className="grid gap-5 lg:grid-cols-3">
+          {networkCards.map((card) => {
+            const Icon = card.icon;
+
+            return (
+              <div
+                key={card.title}
+                className="rounded-[32px] border border-fh-linen bg-fh-white p-7 shadow-sm"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-fh-sand text-fh-copper">
+                  <Icon size={22} />
+                </div>
+                <h2 className="mt-6 font-[family-name:var(--font-manrope)] text-2xl font-semibold text-fh-graphite">
+                  {card.title}
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-fh-stone">
+                  {card.description}
+                </p>
+              </div>
+            );
+          })}
+        </div>
       </section>
 
       <section className="mx-auto max-w-7xl px-6 py-4 lg:px-8">
+        <PublicLaunchNote
+          title="Early professional interest, measured Maryland rollout"
+          description="FuseHarbor is collecting professional interest while the marketplace continues becoming more polished, stable, and operationally ready. Submitting interest does not guarantee placement, but it helps shape the early network and service coverage strategy."
+        />
+      </section>
+
+      <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
         <form
           noValidate
           onSubmit={handleSubmit}
@@ -430,15 +465,16 @@ export default function ForProsPage() {
           <div className="space-y-8">
             <div className="rounded-[36px] border border-fh-linen bg-fh-white p-8 shadow-sm lg:p-10">
               <p className="text-sm font-semibold tracking-[0.2em] text-fh-moss uppercase">
-                Why pros join
+                Why this matters
               </p>
               <h2 className="mt-4 font-[family-name:var(--font-manrope)] text-3xl font-semibold">
-                Built for a better homeowner fit
+                A stronger local marketplace needs serious professionals
               </h2>
               <p className="mt-4 text-base leading-7 text-fh-stone">
-                FuseHarbor is being shaped for professionals who want cleaner
-                lead quality, stronger presentation, and a marketplace that
-                feels intentionally premium rather than crowded and generic.
+                Homeowners need a cleaner path to start complex electrification
+                projects. Professionals need better project context before
+                spending time on leads. FuseHarbor is being built to improve
+                that connection from the first intake.
               </p>
 
               <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -466,7 +502,7 @@ export default function ForProsPage() {
                 How this works
               </p>
               <h3 className="mt-3 font-[family-name:var(--font-manrope)] text-2xl font-semibold">
-                Early interest, not mass rollout
+                Early interest first, formal onboarding later
               </h3>
 
               <div className="mt-8 grid gap-4">
@@ -495,15 +531,29 @@ export default function ForProsPage() {
 
             <div className="rounded-[36px] border border-fh-sand bg-[linear-gradient(135deg,_#f2ebe1_0%,_#e7d9c8_100%)] p-8 shadow-sm lg:p-10">
               <p className="text-sm font-semibold tracking-[0.2em] text-fh-copper uppercase">
-                Important note
+                Funding-ready signal
               </p>
               <h3 className="mt-3 font-[family-name:var(--font-manrope)] text-2xl font-semibold text-fh-graphite">
-                FuseHarbor is still being polished before serious outreach
+                Pro interest helps prove the marketplace opportunity
               </h3>
               <p className="mt-3 text-sm leading-7 text-fh-stone">
-                This page is for early professional interest capture while the
-                marketplace keeps becoming more premium, stable, and launch-ready.
+                For a Maryland-first pilot, contractor interest is more than a
+                signup form. It helps show that FuseHarbor can create value on
+                both sides of the marketplace: homeowners seeking clearer
+                project starts and local professionals seeking better-fit work.
               </p>
+
+              <div className="mt-6 grid gap-3">
+                {fundingReadyPoints.map((point) => (
+                  <div key={point} className="flex items-start gap-3">
+                    <CheckCircle2
+                      size={18}
+                      className="mt-0.5 shrink-0 text-fh-copper"
+                    />
+                    <p className="text-sm leading-6 text-fh-stone">{point}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -521,6 +571,12 @@ export default function ForProsPage() {
                 </h2>
               </div>
             </div>
+
+            <p className="mt-4 text-sm leading-7 text-fh-stone">
+              This form is for early professional interest during FuseHarbor’s
+              Maryland-first pilot planning. It helps organize trade coverage,
+              service areas, and future onboarding conversations.
+            </p>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
@@ -677,7 +733,7 @@ export default function ForProsPage() {
                   name="notes"
                   value={form.notes}
                   onChange={(event) => updateField("notes", event.target.value)}
-                  placeholder="Tell FuseHarbor about your work, specialties, certifications, or service focus."
+                  placeholder="Tell FuseHarbor about your work, specialties, licenses, certifications, service focus, or ideal project types."
                   rows={6}
                   className={inputBaseClassName}
                 />
@@ -780,7 +836,7 @@ export default function ForProsPage() {
                       Primary contact
                     </p>
                     <p className="mt-2 text-sm leading-6 text-fh-stone">
-                      A real person to follow up with later.
+                      A real person for future review.
                     </p>
                   </div>
                 </div>
@@ -814,7 +870,7 @@ export default function ForProsPage() {
                       Service area
                     </p>
                     <p className="mt-2 text-sm leading-6 text-fh-stone">
-                      Helps shape early pro coverage planning.
+                      Helps shape Maryland coverage planning.
                     </p>
                   </div>
                 </div>
