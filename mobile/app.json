@@ -22,10 +22,10 @@
     },
     "android": {
       "package": "org.fuseharbor.app",
-      "versionCode": 1,
+      "versionCode": 3,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#f7f4ee"
+        "backgroundColor": "#111111"
       }
     },
     "web": {
