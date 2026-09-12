@@ -1,4 +1,10 @@
-import { Database, LockKeyhole, Mail, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  Database,
+  LockKeyhole,
+  Mail,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 
@@ -7,8 +13,8 @@ const sections = [
     title: "What this page covers",
     icon: ShieldCheck,
     body: [
-      "This page explains the current data practices for the FuseHarbor website during its pre-launch and early rollout stage.",
-      "FuseHarbor is being built as a premium home electrification marketplace focused on a cleaner, more trusted homeowner and pro experience.",
+      "This page explains how FuseHarbor handles information submitted through the website and related public intake flows.",
+      "FuseHarbor operates as a Maryland-first home electrification intake platform focused on clearer homeowner requests, professional coordination, and trust-led project review.",
     ],
   },
   {
@@ -16,32 +22,35 @@ const sections = [
     icon: Mail,
     body: [
       "When a homeowner submits a quote request, FuseHarbor may collect contact details, property details, project type, project timing, and any notes entered into the form.",
-      "When a professional submits early interest, FuseHarbor may collect company details, contact details, trade category, service area, and any notes entered into the form.",
-      "The site may also receive limited technical request information needed to operate, secure, and improve the website experience.",
+      "When a professional submits interest, FuseHarbor may collect company details, contact details, trade category, service area, and any notes entered into the form.",
+      "When someone contacts FuseHarbor by email, FuseHarbor may keep the sender's email address, message content, and related communication details so the team can respond and maintain internal records.",
+      "The website may also receive limited technical request information needed to operate, secure, and improve the site experience.",
     ],
   },
   {
     title: "How information is used",
     icon: Sparkles,
     body: [
-      "Submitted information is used to review requests, organize workflow, respond to homeowners and professionals, and continue building the platform in a more structured way.",
-      "Information may also be used to improve the site, reduce spam or abusive activity, and support quality-first marketplace operations.",
+      "Submitted information is used to review requests, organize workflow, respond to homeowners and professionals, and support the platform's intake process.",
+      "Information may also be used to reduce spam or abusive activity, improve the website, troubleshoot issues, and support quality-first marketplace operations.",
+      "FuseHarbor does not use quote request information to guarantee pricing, scheduling, contractor assignment, or service availability through the website alone.",
     ],
   },
   {
     title: "Storage and operational tools",
     icon: Database,
     body: [
-      "FuseHarbor uses modern web infrastructure and operational tools to store and process website submissions and related workflow data.",
-      "Information may be retained for as long as reasonably needed to review requests, operate the site, improve launch readiness, and maintain internal records.",
+      "FuseHarbor uses modern web, database, email, and operational tools to receive, store, process, and route website submissions and related workflow data.",
+      "Information may be retained for as long as reasonably needed to review requests, respond to inquiries, operate the site, improve internal workflows, maintain records, and protect the platform from misuse.",
     ],
   },
   {
     title: "Access, review, and updates",
     icon: LockKeyhole,
     body: [
-      "If submitted information needs to be corrected or updated, the simplest path is to follow up through the same channel used for the original request when available.",
-      "As FuseHarbor continues evolving, this page may be updated to reflect changes in website functionality, workflows, and data practices.",
+      "If submitted information needs to be corrected, updated, or deleted, contact FuseHarbor at support@fuseharbor.org or info@fuseharbor.org.",
+      "FuseHarbor may need to retain certain records when reasonably required for operational, security, legal, or business recordkeeping purposes.",
+      "This page may be updated as FuseHarbor's website, app, intake workflows, email routing, and operating practices continue to evolve.",
     ],
   },
 ];
@@ -62,9 +71,9 @@ export default function PrivacyPage() {
             Privacy and data use
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-fh-stone">
-            FuseHarbor is being built with a trust-first approach. This page
-            explains the current website data practices for homeowner quote
-            requests and early pro interest submissions.
+            FuseHarbor is built around a trust-first homeowner experience. This
+            page explains how website submissions, professional interest
+            inquiries, and contact messages are handled during active rollout.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
@@ -74,11 +83,11 @@ export default function PrivacyPage() {
             </div>
             <div className="inline-flex items-center gap-2 rounded-full border border-fh-linen bg-fh-white px-4 py-2 text-sm font-semibold text-fh-graphite shadow-sm">
               <LockKeyhole size={16} className="text-fh-copper" />
-              Intake data awareness
+              Responsible intake data
             </div>
             <div className="inline-flex items-center gap-2 rounded-full border border-fh-linen bg-fh-white px-4 py-2 text-sm font-semibold text-fh-graphite shadow-sm">
               <Database size={16} className="text-fh-copper" />
-              Pre-launch transparency
+              Operational transparency
             </div>
           </div>
         </div>
