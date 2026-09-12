@@ -3,6 +3,9 @@ import { isAllowedSameOriginRequest } from "@/lib/request-origin";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const resendApiKey = process.env.RESEND_API_KEY;
+const notificationEmail = "fuseharbor@gmail.com";
+const fromEmail = "FuseHarbor <support@fuseharbor.org>";
 const MIN_SUBMIT_TIME_MS = 1500;
 
 type QuoteRequestPayload = {
@@ -18,6 +21,13 @@ type QuoteRequestPayload = {
   notes?: string;
   honeypot?: string;
   startedAt?: number;
+};
+
+type NormalizedQuoteRequest = ReturnType<typeof normalizePayload>;
+
+type SavedQuoteRequest = {
+  id: string;
+  created_at: string;
 };
 
 type ZipLookupResponse = {
@@ -47,7 +57,7 @@ function normalizePayload(payload: QuoteRequestPayload) {
     projectType: payload.projectType?.trim() ?? "",
     projectGoal: payload.projectGoal?.trim() ?? "",
     fullName: payload.fullName?.trim() ?? "",
-    email: payload.email?.trim() ?? "",
+    email: payload.email?.trim().toLowerCase() ?? "",
     phone: payload.phone?.replace(/\D/g, "").slice(0, 10) ?? "",
     address: payload.address?.trim() ?? "",
     city: payload.city?.trim() ?? "",
@@ -62,6 +72,187 @@ function normalizePayload(payload: QuoteRequestPayload) {
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function formatPhone(phone: string) {
+  if (!/^\d{10}$/.test(phone)) {
+    return phone;
+  }
+
+  return `(${phone.slice(0, 3)}) ${phone.slice(3, 6)}-${phone.slice(6)}`;
+}
+
+function buildPlainTextQuoteSummary(
+  quote: NormalizedQuoteRequest,
+  savedQuote: SavedQuoteRequest,
+) {
+  return [
+    "New FuseHarbor quote request",
+    "",
+    `Request ID: ${savedQuote.id}`,
+    `Submitted: ${savedQuote.created_at}`,
+    "",
+    `Name: ${quote.fullName}`,
+    `Email: ${quote.email}`,
+    `Phone: ${formatPhone(quote.phone)}`,
+    `Address: ${quote.address}`,
+    `City: ${quote.city}`,
+    `ZIP: ${quote.zipCode}`,
+    `Property type: ${quote.propertyType || "Not provided"}`,
+    "",
+    `Project type: ${quote.projectType}`,
+    `Project goal: ${quote.projectGoal}`,
+    "",
+    `Notes: ${quote.notes || "No notes provided"}`,
+  ].join("\n");
+}
+
+function buildHtmlQuoteSummary(
+  quote: NormalizedQuoteRequest,
+  savedQuote: SavedQuoteRequest,
+) {
+  const rows = [
+    ["Request ID", savedQuote.id],
+    ["Submitted", savedQuote.created_at],
+    ["Name", quote.fullName],
+    ["Email", quote.email],
+    ["Phone", formatPhone(quote.phone)],
+    ["Address", quote.address],
+    ["City", quote.city],
+    ["ZIP", quote.zipCode],
+    ["Property type", quote.propertyType || "Not provided"],
+    ["Project type", quote.projectType],
+    ["Project goal", quote.projectGoal],
+    ["Notes", quote.notes || "No notes provided"],
+  ];
+
+  return `
+    <div style="font-family: Arial, sans-serif; color: #111827; line-height: 1.5;">
+      <h1 style="font-size: 22px; margin: 0 0 16px;">New FuseHarbor quote request</h1>
+      <table style="border-collapse: collapse; width: 100%; max-width: 680px;">
+        <tbody>
+          ${rows
+            .map(
+              ([label, value]) => `
+                <tr>
+                  <td style="border: 1px solid #e5e7eb; padding: 10px; font-weight: 700; background: #f9fafb; width: 180px;">${escapeHtml(label)}</td>
+                  <td style="border: 1px solid #e5e7eb; padding: 10px;">${escapeHtml(value)}</td>
+                </tr>
+              `,
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function buildCustomerConfirmationText(
+  quote: NormalizedQuoteRequest,
+  savedQuote: SavedQuoteRequest,
+) {
+  return [
+    `Hi ${quote.fullName},`,
+    "",
+    "Thank you for submitting your FuseHarbor quote request. We received your project details and will review them for possible next steps.",
+    "",
+    `Request ID: ${savedQuote.id}`,
+    `Project type: ${quote.projectType}`,
+    `Project goal: ${quote.projectGoal}`,
+    "",
+    "FuseHarbor is not an emergency service. Project requests may require follow-up review before any service, pricing, scheduling, or next step is confirmed.",
+    "",
+    "Thank you,",
+    "FuseHarbor",
+  ].join("\n");
+}
+
+function buildCustomerConfirmationHtml(
+  quote: NormalizedQuoteRequest,
+  savedQuote: SavedQuoteRequest,
+) {
+  return `
+    <div style="font-family: Arial, sans-serif; color: #111827; line-height: 1.6; max-width: 640px;">
+      <h1 style="font-size: 22px; margin: 0 0 16px;">We received your FuseHarbor request</h1>
+      <p>Hi ${escapeHtml(quote.fullName)},</p>
+      <p>Thank you for submitting your FuseHarbor quote request. We received your project details and will review them for possible next steps.</p>
+      <div style="border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; background: #f9fafb; margin: 20px 0;">
+        <p style="margin: 0 0 8px;"><strong>Request ID:</strong> ${escapeHtml(savedQuote.id)}</p>
+        <p style="margin: 0 0 8px;"><strong>Project type:</strong> ${escapeHtml(quote.projectType)}</p>
+        <p style="margin: 0;"><strong>Project goal:</strong> ${escapeHtml(quote.projectGoal)}</p>
+      </div>
+      <p>FuseHarbor is not an emergency service. Project requests may require follow-up review before any service, pricing, scheduling, or next step is confirmed.</p>
+      <p>Thank you,<br />FuseHarbor</p>
+    </div>
+  `;
+}
+
+async function sendResendEmail(input: {
+  to: string | string[];
+  subject: string;
+  text: string;
+  html: string;
+  replyTo?: string;
+}) {
+  if (!resendApiKey) {
+    console.warn("RESEND_API_KEY is missing. Skipping FuseHarbor email delivery.");
+    return false;
+  }
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: fromEmail,
+      to: input.to,
+      subject: input.subject,
+      text: input.text,
+      html: input.html,
+      reply_to: input.replyTo,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Resend email delivery failed: ${errorBody}`);
+  }
+
+  return true;
+}
+
+async function sendQuoteRequestEmails(
+  quote: NormalizedQuoteRequest,
+  savedQuote: SavedQuoteRequest,
+) {
+  const plainTextSummary = buildPlainTextQuoteSummary(quote, savedQuote);
+  const htmlSummary = buildHtmlQuoteSummary(quote, savedQuote);
+
+  await sendResendEmail({
+    to: notificationEmail,
+    subject: `New FuseHarbor quote request from ${quote.fullName}`,
+    text: plainTextSummary,
+    html: htmlSummary,
+    replyTo: quote.email,
+  });
+
+  await sendResendEmail({
+    to: quote.email,
+    subject: "We received your FuseHarbor quote request",
+    text: buildCustomerConfirmationText(quote, savedQuote),
+    html: buildCustomerConfirmationHtml(quote, savedQuote),
+  });
 }
 
 async function validateUsZip(zipCode: string) {
@@ -207,6 +398,12 @@ export async function POST(request: Request) {
 
     if (error) {
       throw error;
+    }
+
+    try {
+      await sendQuoteRequestEmails(normalized, data);
+    } catch (emailError) {
+      console.error("FuseHarbor quote request email failed", emailError);
     }
 
     return jsonResponse(
