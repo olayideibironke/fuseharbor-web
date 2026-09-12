@@ -14,24 +14,26 @@ const sections = [
     title: "Website purpose",
     icon: Sparkles,
     body: [
-      "FuseHarbor is being built as a premium home electrification marketplace focused on EV chargers, panel upgrades, heat pumps, battery backup power, and related homeowner project intake.",
-      "The website currently supports public information, homeowner quote requests, early professional interest submissions, and internal operational workflows.",
+      "FuseHarbor operates as a Maryland-first home electrification intake platform focused on EV chargers, panel upgrades, heat pumps, battery backup power, and related homeowner project requests.",
+      "The website supports public information, homeowner quote requests, professional interest submissions, contact routing, and internal operational workflows.",
     ],
   },
   {
     title: "No contractor engagement created by site visit alone",
     icon: Wrench,
     body: [
-      "Using the FuseHarbor website, browsing pages, or submitting an intake form does not by itself create a contractor-client relationship, project agreement, or guarantee of service.",
-      "A submitted quote request or pro interest submission is only an intake and review step unless and until a later direct engagement is separately confirmed.",
+      "Using the FuseHarbor website, browsing pages, sending an email, or submitting an intake form does not by itself create a contractor-client relationship, project agreement, or guarantee of service.",
+      "A submitted quote request or professional interest submission is an intake and review step unless and until a later direct engagement is separately confirmed.",
+      "Any pricing, scheduling, site visit, contractor assignment, or project next step must be confirmed separately after review.",
     ],
   },
   {
     title: "Accuracy and review",
     icon: ShieldCheck,
     body: [
-      "FuseHarbor aims to present a cleaner, more trusted experience, but website content, workflows, and availability may continue changing during the pre-launch and launch-readiness period.",
+      "FuseHarbor aims to present a cleaner, more trusted homeowner experience, but website content, workflows, and availability may continue changing as the platform grows.",
       "Visitors should provide accurate information when using forms so the platform can review requests and follow up more clearly.",
+      "FuseHarbor may review, delay, decline, or request more information for submissions that are incomplete, outside the platform's current focus, or not appropriate for the intended workflow.",
     ],
   },
   {
@@ -39,23 +41,24 @@ const sections = [
     icon: Scale,
     body: [
       "The website may not be used for spam, abusive activity, fraudulent submissions, interference with platform operations, or attempts to access internal-only systems without authorization.",
-      "FuseHarbor may restrict, remove, or ignore submissions that appear abusive, misleading, automated, or inconsistent with the intended use of the platform.",
+      "FuseHarbor may restrict, remove, or ignore submissions that appear abusive, misleading, automated, duplicative, or inconsistent with the intended use of the platform.",
     ],
   },
   {
     title: "Platform changes",
     icon: RefreshCw,
     body: [
-      "FuseHarbor may update, improve, pause, or restructure parts of the website, intake flows, and internal operations as the marketplace continues becoming more polished and launch-ready.",
-      "This Terms page may also be updated as the site evolves.",
+      "FuseHarbor may update, improve, pause, or restructure parts of the website, intake flows, app experience, email routing, and internal operations as the marketplace continues to develop.",
+      "This Terms page may also be updated as the site, services, and operating practices evolve.",
     ],
   },
   {
     title: "General website use",
     icon: FileText,
     body: [
-      "All website materials, branding, and workflows are provided to support FuseHarbor’s marketplace experience and ongoing platform buildout.",
-      "Nothing on this page should be read as a guarantee of project approval, contractor assignment, timing commitment, or platform feature permanence during the current build stage.",
+      "All website materials, branding, and workflows are provided to support FuseHarbor's marketplace experience and public intake operations.",
+      "Nothing on this page should be read as a guarantee of project approval, contractor assignment, timing commitment, financing, savings, incentives, rebate eligibility, or permanent feature availability.",
+      "For general questions about FuseHarbor, contact info@fuseharbor.org or support@fuseharbor.org.",
     ],
   },
 ];
@@ -77,7 +80,8 @@ export default function TermsPage() {
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-fh-stone">
             These terms describe the current use expectations for the FuseHarbor
-            website during its pre-launch and launch-readiness stage.
+            website, homeowner quote requests, professional interest
+            submissions, and public contact channels.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
@@ -91,7 +95,7 @@ export default function TermsPage() {
             </div>
             <div className="inline-flex items-center gap-2 rounded-full border border-fh-linen bg-fh-white px-4 py-2 text-sm font-semibold text-fh-graphite shadow-sm">
               <FileText size={16} className="text-fh-copper" />
-              Pre-launch transparency
+              Active rollout terms
             </div>
           </div>
         </div>
