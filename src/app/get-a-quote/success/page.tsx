@@ -8,6 +8,8 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
+import { SiteFooter } from "@/components/site-footer";
+import { SiteHeader } from "@/components/site-header";
 
 function formatSubmittedDate(value: string | undefined) {
   if (!value) {
@@ -66,7 +68,9 @@ export default async function GetAQuoteSuccessPage({
       <section className="relative overflow-hidden border-b border-fh-linen/80 bg-[linear-gradient(to_bottom,_#fffdf9,_#f7f4ee)]">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,_rgba(201,122,43,0.14),_transparent_26%),radial-gradient(circle_at_top_right,_rgba(122,139,90,0.12),_transparent_24%)]" />
 
-        <div className="mx-auto max-w-6xl px-6 pb-16 pt-16 lg:px-8 lg:pb-20 lg:pt-20">
+        <SiteHeader />
+
+        <div className="mx-auto max-w-6xl px-6 pb-16 pt-6 lg:px-8 lg:pb-20">
           <p className="text-sm font-semibold tracking-[0.2em] text-fh-copper uppercase">
             Quote request received
           </p>
@@ -228,6 +232,8 @@ export default async function GetAQuoteSuccessPage({
           </div>
         </div>
       </section>
+
+      <SiteFooter />
     </main>
   );
 }
