@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   ChevronRight,
+  Mail,
   ShieldCheck,
   Sparkles,
   Zap,
@@ -9,17 +10,16 @@ import {
 import { BrandMark } from "@/components/brand-mark";
 
 const footerLinks = [
-  { href: "/#services", label: "Services" },
-  { href: "/#how-it-works", label: "How It Works" },
-  { href: "/for-pros", label: "For Pros" },
+  { href: "/how-it-works", label: "How It Works" },
   { href: "/get-a-quote", label: "Get a Quote" },
+  { href: "/for-pros", label: "For Pros" },
   { href: "/contact", label: "Contact" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
 ];
 
 const footerSignals = [
-  "Premium homeowner experience",
+  "Maryland-first homeowner intake",
   "Electrification-focused marketplace",
   "Built around trust and clarity",
 ];
@@ -33,10 +33,9 @@ export function SiteFooter() {
             <BrandMark size="lg" />
 
             <p className="max-w-xl text-sm leading-7 text-fh-stone">
-              FuseHarbor is being built to give homeowners a cleaner, more
-              trusted way to start EV charging, panel upgrades, heat pumps, and
-              backup power projects with a more premium experience from the
-              first step.
+              FuseHarbor helps homeowners start EV charger, panel upgrade, heat
+              pump, and backup power quote requests with a cleaner, more
+              organized intake experience.
             </p>
 
             <div className="flex flex-wrap gap-3">
@@ -50,6 +49,31 @@ export function SiteFooter() {
                 </div>
               ))}
             </div>
+
+            <div className="grid gap-2 rounded-[24px] border border-fh-linen bg-fh-warm-white p-5 text-sm text-fh-stone sm:max-w-xl">
+              <div className="inline-flex items-center gap-2 font-semibold text-fh-graphite">
+                <Mail size={16} className="text-fh-copper" />
+                Contact FuseHarbor
+              </div>
+              <p>
+                Homeowner support: {" "}
+                <a
+                  href="mailto:support@fuseharbor.org"
+                  className="font-semibold text-fh-graphite transition hover:text-fh-copper"
+                >
+                  support@fuseharbor.org
+                </a>
+              </p>
+              <p>
+                General inquiries: {" "}
+                <a
+                  href="mailto:info@fuseharbor.org"
+                  className="font-semibold text-fh-graphite transition hover:text-fh-copper"
+                >
+                  info@fuseharbor.org
+                </a>
+              </p>
+            </div>
           </div>
 
           <div className="grid gap-8 sm:grid-cols-2">
@@ -58,7 +82,7 @@ export function SiteFooter() {
                 Explore
               </p>
 
-              <nav className="mt-5 grid gap-3">
+              <nav className="mt-5 grid gap-3" aria-label="Footer navigation">
                 {footerLinks.map((item) => (
                   <Link
                     key={item.href}
@@ -86,8 +110,8 @@ export function SiteFooter() {
                   Start your project with clarity
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-fh-stone">
-                  Use FuseHarbor’s guided intake to begin your electrification
-                  project with a more structured homeowner experience.
+                  Use FuseHarbor's guided intake to submit your project details
+                  for homeowner quote review.
                 </p>
 
                 <Link
