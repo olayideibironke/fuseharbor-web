@@ -71,10 +71,11 @@ export default async function GetAQuoteSuccessPage({
             Quote request received
           </p>
           <h1 className="mt-4 max-w-4xl font-[family-name:var(--font-manrope)] text-5xl font-semibold tracking-[-0.04em] sm:text-6xl">
-            Thanks — your quote request has been submitted
+            Thanks. Your quote request has been submitted.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-fh-stone">
-            FuseHarbor now has your homeowner project details on file for review.
+            FuseHarbor has your homeowner project details on file and will review
+            them for possible next steps.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
@@ -127,8 +128,9 @@ export default async function GetAQuoteSuccessPage({
                         Follow-up can use your submitted contact details
                       </p>
                       <p className="mt-1 text-sm leading-6 text-fh-stone">
-                        Your homeowner contact information is now saved for
-                        future project follow-up.
+                        Your homeowner contact information is saved for project
+                        follow-up if the request is a fit for the current service
+                        workflow.
                       </p>
                     </div>
                   </div>
@@ -153,11 +155,11 @@ export default async function GetAQuoteSuccessPage({
                     <Sparkles size={18} className="mt-0.5 shrink-0 text-fh-copper" />
                     <div>
                       <p className="text-sm font-semibold text-fh-graphite">
-                        Premium homeowner intake continues
+                        A cleaner homeowner intake experience
                       </p>
                       <p className="mt-1 text-sm leading-6 text-fh-stone">
-                        Your request is now inside the launch-ready homeowner
-                        flow designed to feel clearer and more thoughtful than a
+                        Your request is now inside a structured homeowner flow
+                        designed to feel clearer and more thoughtful than a
                         generic contractor form.
                       </p>
                     </div>
@@ -219,8 +221,8 @@ export default async function GetAQuoteSuccessPage({
                 Quote request saved
               </h3>
               <p className="mt-4 text-base leading-7 text-fh-stone">
-                Quote requests are free. Payment will only belong in the later
-                homeowner-to-pro project workflow.
+                Quote requests are free. Payment will only belong in a later
+                confirmed homeowner-to-pro project workflow.
               </p>
             </div>
           </div>
