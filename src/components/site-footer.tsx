@@ -127,7 +127,12 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-10 flex flex-col gap-4 border-t border-fh-linen pt-6 text-sm text-fh-stone sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2026 FuseHarbor. All rights reserved.</p>
+          <p>
+            © 2026 FuseHarbor. All rights reserved. {" "}
+            <span className="font-semibold text-fh-graphite">
+              A product of Westforge Holdings Inc.
+            </span>
+          </p>
 
           <div className="inline-flex items-center gap-2">
             <Sparkles size={15} className="text-fh-copper" />
